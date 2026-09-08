@@ -44,10 +44,11 @@ later cite exactly where an answer came from." For testing: "I tested the data
 contract — every document has the fields retrieval depends on, and ids are unique
 since those become the citation keys."
 
-**Status:** Code + tests written and explained. Not yet pytest-verified (pip
-install blocked by cloud sandbox network restrictions) — verified manually with
-plain Python assertions instead, all passed. Run `pip3 install pytest` then
-`pytest tests/ -v` yourself locally to confirm formally.
+**Status:** Done. Formally verified with real pytest on the local machine (the
+cloud sandbox that wrote this code couldn't install pytest due to network
+restrictions) — all 5 tests pass. `data/processed/corpus.json` is generated
+output from `ingest.py`, not source, so it's gitignored rather than committed —
+re-run `python3 -m src.ingest` anytime to rebuild it from `data/raw/`.
 
 ## Not started yet
 - Sprint 2: chunking, embeddings, semantic retrieval
