@@ -1,0 +1,15 @@
+# WH-1000XM5 Pairing Troubleshooting
+
+Solutions when pairing fails:
+
+1. Proximity: Bring the headset and the Bluetooth device within 1 m (3 feet) from each other.
+
+2. Pairing Mode: For initial pairing after purchase or reset, the headset enters pairing mode automatically. For subsequent devices, press and hold the power button on the headset for about 5 seconds to enter pairing mode.
+
+3. Retained Pairing Info: After initialization or repair, devices may retain old pairing data. Delete the headset's pairing information from the device before attempting reconnection.
+
+4. Restart Connected Device: Power cycle your smartphone or computer and attempt pairing again.
+
+5. Reset the Headset: Perform a headset reset.
+
+6. Initialize the Headset: Restore factory settings and retry pairing.

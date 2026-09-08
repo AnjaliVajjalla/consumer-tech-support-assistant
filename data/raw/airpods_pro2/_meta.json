@@ -1,0 +1,16 @@
+[
+  {
+    "file": "tech_specs.txt",
+    "product": "AirPods Pro 2 (USB-C)",
+    "title": "AirPods Pro 2 with MagSafe Charging Case (USB-C) - Tech Specs",
+    "url": "https://support.apple.com/en-us/111834",
+    "category": "specs"
+  },
+  {
+    "file": "connection_troubleshooting.txt",
+    "product": "AirPods Pro 2 (USB-C)",
+    "title": "If your AirPods or AirPods Pro won't connect",
+    "url": "https://support.apple.com/en-us/118576",
+    "category": "troubleshooting"
+  }
+]

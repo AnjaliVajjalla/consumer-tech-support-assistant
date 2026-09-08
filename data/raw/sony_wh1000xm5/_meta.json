@@ -1,0 +1,16 @@
+[
+  {
+    "file": "pairing.txt",
+    "product": "Sony WH-1000XM5",
+    "title": "Pairing and connecting with a Bluetooth device",
+    "url": "https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000534541.html",
+    "category": "setup"
+  },
+  {
+    "file": "pairing_troubleshooting.txt",
+    "product": "Sony WH-1000XM5",
+    "title": "Pairing cannot be done",
+    "url": "https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000534625.html",
+    "category": "troubleshooting"
+  }
+]

@@ -1,0 +1,26 @@
+# WH-1000XM5 Bluetooth Pairing Instructions
+
+## Prerequisites
+Before pairing, ensure:
+- The Bluetooth device is within 1 meter (3 feet) of the headset
+- The headset has sufficient charge
+- You have the Bluetooth device's operating instructions available
+
+## Pairing Steps
+
+Step 1: Enter Pairing Mode
+For initial pairing after purchase or reset, simply power on the headset, it automatically enters pairing mode. For subsequent devices, press and hold the power button for about 5 seconds. The blue indicator will flash twice repeatedly, and you'll hear "Pairing" as voice guidance.
+
+Step 2: Search on Bluetooth Device
+Access the pairing procedure on your Bluetooth device and search for available headsets. "WH-1000XM5" will be displayed on the list of detected devices.
+
+Step 3: Select and Pair
+Choose the WH-1000XM5 from the list. If a passkey is requested, enter "0000."
+
+Step 4: Establish Connection
+Complete the Bluetooth connection process. Some devices connect automatically after pairing completes. You'll receive a notification sound confirming successful connection.
+
+## Key Notes
+- Pairing mode cancels automatically after 5 minutes of inactivity
+- The headset supports up to 8 paired devices simultaneously
+- Once paired, devices don't require re-pairing except after initialization or deletion
