@@ -106,8 +106,38 @@ closer together than unrelated ones, not just that the code runs."
 
 **Status:** Done. 16/16 tests pass across the whole project.
 
+## Sprint 2 — Semantic retrieval (done, tested, reviewed)
+**What it is:** `src/retrieve.py` completes the RAG pipeline. It joins
+`chunks.json` (text + metadata) and `embeddings.json` (vectors) back
+together by `chunk_id` (`load_chunks_with_embeddings`), then `retrieve()`
+embeds a question with the same model used on the chunks, scores every
+chunk by cosine similarity to that question, sorts best-first, and
+returns the top `top_k` matches.
+
+**Lesson:** Retrieval is the step that makes semantic search real: a
+question and a chunk both become vectors, and "most relevant" just means
+"highest cosine similarity." Everything built in Sprints 1-2 (ingest ->
+chunk -> embed) exists to feed this one comparison.
+
+**Tests:** `tests/test_retrieve.py` (2 tests) — given a pairing chunk, a
+battery chunk, and a returns chunk, a pairing-style question retrieves
+the pairing chunk first (proves the ranking is actually correct, not
+just that the code runs), and `top_k` is respected. Also ran
+`python3 -m src.retrieve` end-to-end on the real corpus: asking "How do
+I pair my headphones?" correctly ranked the Sony pairing document (score
+0.534) above AirPods connection-troubleshooting content (0.458).
+
+**Interview answer:** "Retrieval turns a user's question into the same
+kind of vector used for the document chunks, then ranks every chunk by
+cosine similarity to find the closest matches. I verified it end-to-end
+with a real question and confirmed the correct document actually came
+back ranked first, not just that the script ran without errors."
+
+**Status:** Done. 18/18 tests pass across the whole project. Sprint 2 is
+now fully code-complete: ingest -> chunk -> embed -> retrieve, each step
+tested. Merged into `main` via PR #13.
+
 ## Not started yet
-- Sprint 2: semantic retrieval (`src/retrieve.py`, not built yet)
 - Sprint 3: source-grounded answer generation + citations
 - Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
 
