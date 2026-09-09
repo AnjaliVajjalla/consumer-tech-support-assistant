@@ -14,7 +14,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from embed import embed_texts  # noqa: E402
+from embed import embed_chunks, embed_texts  # noqa: E402
 
 
 def cosine_similarity(a, b) -> float:
@@ -49,3 +49,18 @@ def test_similar_sentences_are_closer_than_unrelated_ones():
         "Embeddings should place semantically similar sentences closer "
         "together than unrelated ones"
     )
+
+
+def test_embed_chunks_produces_one_embedding_per_chunk_with_matching_id():
+    chunks = [
+        {"chunk_id": "doc1__c0", "text": "How do I pair my headphones?"},
+        {"chunk_id": "doc1__c1", "text": "What is the battery life?"},
+    ]
+
+    embeddings = embed_chunks(chunks)
+    chunk_ids = [c["chunk_id"] for c in chunks]
+    embedding_ids = [e["chunk_id"] for e in embeddings]
+
+    assert len(embeddings) == len(chunks)
+    assert embedding_ids == chunk_ids
+    assert all("embedding" in e and len(e["embedding"]) > 0 for e in embeddings)
