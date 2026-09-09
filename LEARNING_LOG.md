@@ -50,13 +50,34 @@ restrictions) — all 5 tests pass. `data/processed/corpus.json` is generated
 output from `ingest.py`, not source, so it's gitignored rather than committed —
 re-run `python3 -m src.ingest` anytime to rebuild it from `data/raw/`.
 
+## Sprint 2 — Chunking, embeddings, semantic retrieval (in progress — chunking done)
+**What it is:** `src/chunk.py` splits each ingested document into ~100-word
+chunks with 20-word overlap, keeping `product`/`title`/`url`/`category` on
+every chunk so it stays traceable back to its source document. Reuses
+`ingest.build_corpus()` directly rather than reading `corpus.json` off disk,
+so chunking always reflects the current `data/raw/` contents.
+
+**Lesson:** Chunking exists because retrieval needs to return small, precise
+passages, not whole documents. A document might cover several topics, so
+retrieving the whole thing buries the answer in irrelevant text; smaller
+chunks also keep pieces short enough for later LLM context limits.
+
+**Tests:** `tests/test_chunk.py` — chunks are produced, every chunk has all
+required fields, chunk ids are unique, every chunk traces back to a real
+document id, short text returns a single chunk, long text splits into
+overlapping chunks with the correct overlap.
+
+**Status:** Chunking merged into `main` (PR #11, squash-merged as commit
+`a6e09dd`). Embeddings and semantic retrieval, the other two pieces of this
+sprint, have not been started. Sprint 2 is not complete.
+
 ## Not started yet
-- Sprint 2: chunking, embeddings, semantic retrieval
+- Rest of Sprint 2: embeddings, semantic retrieval
 - Sprint 3: source-grounded answer generation + citations
 - Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
 
 ## Repo status
-Git initialized locally, one commit made ("Sprint 0-1: project brief, raw doc
-corpus, ingestion script + tests"). No GitHub remote yet — create the repo and
-push from Claude Code or your own Terminal, since that has real network access
-(this cloud session's local shell doesn't).
+GitHub remote is set up (`AnjaliVajjalla/consumer-tech-support-assistant`,
+private). Workflow per sprint: branch off `main`, build + test locally,
+commit, push, open a PR, merge only after explicit confirmation, then pull
+`main` locally. Sprint 2's chunking work followed this via PR #11.
