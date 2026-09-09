@@ -71,7 +71,8 @@ text splits into overlapping chunks (verified the actual 20-word overlap).
 chunks so retrieval works on passages small enough to be relevant, while
 each chunk still carries its source document's metadata for citations."
 
-**Status:** Done. 7/7 tests pass.
+**Status:** Done. 7/7 tests pass. Merged into `main` via PR #11
+(squash-merged as commit `a6e09dd`).
 
 ## Sprint 2 — Embeddings (done, tested, reviewed)
 **What it is:** `src/embed.py` turns text into vectors using
@@ -111,7 +112,7 @@ closer together than unrelated ones, not just that the code runs."
 - Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
 
 ## Repo status
-Git initialized locally, one commit made ("Sprint 0-1: project brief, raw doc
-corpus, ingestion script + tests"). No GitHub remote yet — create the repo and
-push from Claude Code or your own Terminal, since that has real network access
-(this cloud session's local shell doesn't).
+GitHub remote is set up (`AnjaliVajjalla/consumer-tech-support-assistant`,
+private). Workflow per sprint: branch off `main`, build + test locally,
+commit, push, open a PR, merge only after explicit confirmation, then pull
+`main` locally. Sprint 2's chunking work followed this via PR #11.
