@@ -50,8 +50,63 @@ restrictions) — all 5 tests pass. `data/processed/corpus.json` is generated
 output from `ingest.py`, not source, so it's gitignored rather than committed —
 re-run `python3 -m src.ingest` anytime to rebuild it from `data/raw/`.
 
+## Sprint 2 — Chunking (done, tested, reviewed)
+**What it is:** `src/chunk.py` splits each ingested document into ~100-word
+chunks with 20-word overlap (`chunk_text`), then attaches the parent
+document's metadata (product, title, url, category) to every chunk
+(`chunk_corpus`). Output: `data/processed/chunks.json`.
+
+**Lesson:** Semantic search retrieves chunks, not whole documents, so every
+chunk needs its own stable `chunk_id` plus a trace back to its source
+document (`doc_id`) to keep citations correct. Overlap between chunks
+matters because it stops an answer's key sentence from being split across
+two chunks with neither one containing the full thought.
+
+**Tests:** `tests/test_chunk.py` (7 tests) — chunks get produced, every
+chunk has all 7 required fields, no blank text, unique chunk ids, every
+chunk traces back to a real document, short text stays one chunk, long
+text splits into overlapping chunks (verified the actual 20-word overlap).
+
+**Interview answer:** "I split documents into overlapping word-based
+chunks so retrieval works on passages small enough to be relevant, while
+each chunk still carries its source document's metadata for citations."
+
+**Status:** Done. 7/7 tests pass.
+
+## Sprint 2 — Embeddings (done, tested, reviewed)
+**What it is:** `src/embed.py` turns text into vectors using
+`sentence-transformers` (`all-MiniLM-L6-v2`, a small free local model, no
+API key needed). `embed_texts()` embeds a list of strings.
+`embed_chunks()` embeds every chunk from `chunks.json` and returns
+`{chunk_id, embedding}` records, keeping the link back to the full chunk
+(text + metadata) by id instead of duplicating it. `main()` writes the
+results to `data/processed/embeddings.json`.
+
+**Lesson:** An embedding is text turned into a list of numbers such that
+similar meaning ends up numerically close. That's the mechanism behind
+semantic search: compare a question's vector to every chunk's vector
+instead of matching exact keywords. Keeping embeddings in a separate file
+from chunk text (linked by `chunk_id`) means the embedding model can be
+swapped later without touching the chunk data.
+
+**Tests:** `tests/test_embed.py` (4 tests) — one vector per input text,
+all vectors the same length, semantically similar sentences produce
+vectors with higher cosine similarity than unrelated ones (the real proof
+the model captures meaning, not just word overlap), and `embed_chunks`
+preserves one embedding per chunk with the matching `chunk_id`. Also ran
+`python3 -m src.chunk` then `python3 -m src.embed` end-to-end on the real
+corpus: 9 chunks -> 9 embeddings, 384 numbers each.
+
+**Interview answer:** "I used a small local embedding model to turn each
+chunk into a vector, so a user's question can later be compared by
+meaning against every chunk instead of relying on exact keyword matches.
+I tested it by confirming semantically similar sentences actually end up
+closer together than unrelated ones, not just that the code runs."
+
+**Status:** Done. 16/16 tests pass across the whole project.
+
 ## Not started yet
-- Sprint 2: chunking, embeddings, semantic retrieval
+- Sprint 2: semantic retrieval (`src/retrieve.py`, not built yet)
 - Sprint 3: source-grounded answer generation + citations
 - Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
 
