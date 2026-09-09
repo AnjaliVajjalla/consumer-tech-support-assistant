@@ -50,29 +50,94 @@ restrictions) — all 5 tests pass. `data/processed/corpus.json` is generated
 output from `ingest.py`, not source, so it's gitignored rather than committed —
 re-run `python3 -m src.ingest` anytime to rebuild it from `data/raw/`.
 
-## Sprint 2 — Chunking, embeddings, semantic retrieval (in progress — chunking done)
+## Sprint 2 — Chunking (done, tested, reviewed)
 **What it is:** `src/chunk.py` splits each ingested document into ~100-word
-chunks with 20-word overlap, keeping `product`/`title`/`url`/`category` on
-every chunk so it stays traceable back to its source document. Reuses
-`ingest.build_corpus()` directly rather than reading `corpus.json` off disk,
-so chunking always reflects the current `data/raw/` contents.
+chunks with 20-word overlap (`chunk_text`), then attaches the parent
+document's metadata (product, title, url, category) to every chunk
+(`chunk_corpus`). Output: `data/processed/chunks.json`.
 
-**Lesson:** Chunking exists because retrieval needs to return small, precise
-passages, not whole documents. A document might cover several topics, so
-retrieving the whole thing buries the answer in irrelevant text; smaller
-chunks also keep pieces short enough for later LLM context limits.
+**Lesson:** Semantic search retrieves chunks, not whole documents, so every
+chunk needs its own stable `chunk_id` plus a trace back to its source
+document (`doc_id`) to keep citations correct. Overlap between chunks
+matters because it stops an answer's key sentence from being split across
+two chunks with neither one containing the full thought.
 
-**Tests:** `tests/test_chunk.py` — chunks are produced, every chunk has all
-required fields, chunk ids are unique, every chunk traces back to a real
-document id, short text returns a single chunk, long text splits into
-overlapping chunks with the correct overlap.
+**Tests:** `tests/test_chunk.py` (7 tests) — chunks get produced, every
+chunk has all 7 required fields, no blank text, unique chunk ids, every
+chunk traces back to a real document, short text stays one chunk, long
+text splits into overlapping chunks (verified the actual 20-word overlap).
 
-**Status:** Chunking merged into `main` (PR #11, squash-merged as commit
-`a6e09dd`). Embeddings and semantic retrieval, the other two pieces of this
-sprint, have not been started. Sprint 2 is not complete.
+**Interview answer:** "I split documents into overlapping word-based
+chunks so retrieval works on passages small enough to be relevant, while
+each chunk still carries its source document's metadata for citations."
+
+**Status:** Done. 7/7 tests pass. Merged into `main` via PR #11
+(squash-merged as commit `a6e09dd`).
+
+## Sprint 2 — Embeddings (done, tested, reviewed)
+**What it is:** `src/embed.py` turns text into vectors using
+`sentence-transformers` (`all-MiniLM-L6-v2`, a small free local model, no
+API key needed). `embed_texts()` embeds a list of strings.
+`embed_chunks()` embeds every chunk from `chunks.json` and returns
+`{chunk_id, embedding}` records, keeping the link back to the full chunk
+(text + metadata) by id instead of duplicating it. `main()` writes the
+results to `data/processed/embeddings.json`.
+
+**Lesson:** An embedding is text turned into a list of numbers such that
+similar meaning ends up numerically close. That's the mechanism behind
+semantic search: compare a question's vector to every chunk's vector
+instead of matching exact keywords. Keeping embeddings in a separate file
+from chunk text (linked by `chunk_id`) means the embedding model can be
+swapped later without touching the chunk data.
+
+**Tests:** `tests/test_embed.py` (4 tests) — one vector per input text,
+all vectors the same length, semantically similar sentences produce
+vectors with higher cosine similarity than unrelated ones (the real proof
+the model captures meaning, not just word overlap), and `embed_chunks`
+preserves one embedding per chunk with the matching `chunk_id`. Also ran
+`python3 -m src.chunk` then `python3 -m src.embed` end-to-end on the real
+corpus: 9 chunks -> 9 embeddings, 384 numbers each.
+
+**Interview answer:** "I used a small local embedding model to turn each
+chunk into a vector, so a user's question can later be compared by
+meaning against every chunk instead of relying on exact keyword matches.
+I tested it by confirming semantically similar sentences actually end up
+closer together than unrelated ones, not just that the code runs."
+
+**Status:** Done. 16/16 tests pass across the whole project.
+
+## Sprint 2 — Semantic retrieval (done, tested, reviewed)
+**What it is:** `src/retrieve.py` completes the RAG pipeline. It joins
+`chunks.json` (text + metadata) and `embeddings.json` (vectors) back
+together by `chunk_id` (`load_chunks_with_embeddings`), then `retrieve()`
+embeds a question with the same model used on the chunks, scores every
+chunk by cosine similarity to that question, sorts best-first, and
+returns the top `top_k` matches.
+
+**Lesson:** Retrieval is the step that makes semantic search real: a
+question and a chunk both become vectors, and "most relevant" just means
+"highest cosine similarity." Everything built in Sprints 1-2 (ingest ->
+chunk -> embed) exists to feed this one comparison.
+
+**Tests:** `tests/test_retrieve.py` (2 tests) — given a pairing chunk, a
+battery chunk, and a returns chunk, a pairing-style question retrieves
+the pairing chunk first (proves the ranking is actually correct, not
+just that the code runs), and `top_k` is respected. Also ran
+`python3 -m src.retrieve` end-to-end on the real corpus: asking "How do
+I pair my headphones?" correctly ranked the Sony pairing document (score
+0.534) above AirPods connection-troubleshooting content (0.458).
+
+**Interview answer:** "Retrieval turns a user's question into the same
+kind of vector used for the document chunks, then ranks every chunk by
+cosine similarity to find the closest matches. I verified it end-to-end
+with a real question and confirmed the correct document actually came
+back ranked first, not just that the script ran without errors."
+
+**Status:** Done. 18/18 tests pass across the whole project. Sprint 2 is
+now fully code-complete: ingest -> chunk -> embed -> retrieve, each step
+tested. Merged into `main` via PR #13.
 
 ## Not started yet
-- Rest of Sprint 2: embeddings, semantic retrieval
 - Sprint 3: source-grounded answer generation + citations
 - Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
 
