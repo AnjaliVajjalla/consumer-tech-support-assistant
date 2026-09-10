@@ -187,22 +187,45 @@ while a wrong-product question still reaches the model, which correctly
 says it doesn't cover that product. This is defense in depth: retrieval
 filters obvious nonsense, the prompt handles subtler judgment calls.
 
+**Extension: token usage tracking.** `generate_answer` now reads
+`response.usage.input_tokens`/`output_tokens` from the API response and
+returns them alongside the answer, printed by both `main()` and
+`cli.py`. Previously that data was silently discarded. Ties directly to
+the "observability" goal in `PROJECT_BRIEF.md`, actual per-call cost is
+now visible, not just assumed.
+
+**Extension: plain-text system prompt.** The model was writing markdown
+headers and bold text (`# Sony WH-1000XM5 Pairing Instructions`), fine for
+a chat UI, not for this project's plain-text CLI. Added one line to
+`SYSTEM_PROMPT` asking for plain paragraphs/numbered lists instead.
+
+**Extension: boundary cases became permanent evals, not just chat
+history.** The Bose (product not in corpus) and warranty-refusal
+behaviors were previously only verified by eye during manual CLI testing,
+nothing would have caught a regression. Turned out the citation-filtering
+fix from earlier already made this trivial to assert: both refusals now
+correctly return `sources: []` (the model cites nothing when it declines),
+so the new eval tests just check `sources == []`, no fragile string
+matching on the model's exact wording needed.
+
 **Tests:** `tests/test_generate.py` (7 tests, mocked API, no cost) — chunk
-numbering, empty-input edge case, sources correctly match what's cited,
-the real question/context gets sent to the API, citing nothing returns no
-sources, a low-relevance question skips the API entirely, and a relevant
-one still reaches it. `evals/test_citations.py` (2 tests, real API calls,
-kept separate from `tests/` since it costs money and tests actual model
-behavior, not just our code) — checks the model's own `[n]` citations in
-a generated answer point to the correct product, not just that the right
-chunk was retrieved nearby.
+numbering, empty-input edge case, sources correctly match what's cited
+(including the returned token usage), the real question/context gets sent
+to the API, citing nothing returns no sources, a low-relevance question
+skips the API entirely (with zero usage), and a relevant one still reaches
+it. `evals/test_citations.py` (4 tests, real API calls, kept separate from
+`tests/` since it costs money and tests actual model behavior, not just
+our code) — the model's own `[n]` citations point to the correct product
+for two real questions, and the Bose/warranty questions both correctly
+cite nothing.
 
 **Manually verified live, beyond the automated tests:** correct grounded
-pairing steps with citations; correctly declined to answer about a
-product not in the corpus (Bose); correctly refused to invent a warranty
-policy (boundary from `PROJECT_BRIEF.md`); correctly admitted a source
-mentions a Sony reset exists but doesn't include the steps, rather than
-guessing them.
+pairing steps with citations, now in plain text with real token counts
+shown (e.g. 563 in / 293 out for one pairing question); correctly declined
+to answer about a product not in the corpus (Bose); correctly refused to
+invent a warranty policy (boundary from `PROJECT_BRIEF.md`); correctly
+admitted a source mentions a Sony reset exists but doesn't include the
+steps, rather than guessing them.
 
 **Interview answer:** "I built the generation step of a RAG pipeline:
 retrieved passages get numbered and passed to Claude with a system prompt
@@ -213,7 +236,7 @@ bug, the code was reporting sources the model never actually used, fixed
 it by checking which citation markers actually appear in the generated
 text, and added a test for that exact case."
 
-**Status:** Done. 25/25 mocked tests pass, 2/2 real citation evals pass.
+**Status:** Done. 25/25 mocked tests pass, 4/4 real citation evals pass.
 Built on branch `sprint-3-source-grounded-answers`, committed and pushed,
 open as PR #14, not yet merged.
 

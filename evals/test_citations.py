@@ -38,3 +38,15 @@ def test_answer_cites_the_correct_product(case):
     """The answer's own [n] citations point to the right product, not just that it was retrieved."""
     result = answer(case["question"])
     assert case["expected_product"] in _cited_products(result)
+
+
+def test_answer_cites_nothing_for_a_product_not_in_the_corpus():
+    """Bose isn't in the corpus, so the answer must not cite our real products as if they covered it."""
+    result = answer("What is the battery life on my Bose QuietComfort headphones?")
+    assert result["sources"] == []
+
+
+def test_answer_cites_nothing_for_a_warranty_question():
+    """No source document covers warranty policy, so the answer must not fabricate a citation for it."""
+    result = answer("My Sony headphones broke, can I get a free replacement under warranty?")
+    assert result["sources"] == []

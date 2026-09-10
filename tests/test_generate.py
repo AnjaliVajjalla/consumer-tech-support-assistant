@@ -1,6 +1,12 @@
 from unittest.mock import MagicMock, patch
 
-from src.generate import NO_RELEVANT_INFO_ANSWER, answer, build_context, generate_answer
+from src.generate import (
+    NO_RELEVANT_INFO_ANSWER,
+    ZERO_USAGE,
+    answer,
+    build_context,
+    generate_answer,
+)
 
 SAMPLE_CHUNKS = [
     {
@@ -32,9 +38,10 @@ def test_build_context_empty_chunks_returns_empty_string():
     assert build_context([]) == ""
 
 
-def _fake_response(text: str):
+def _fake_response(text: str, input_tokens: int = 42, output_tokens: int = 17):
     fake = MagicMock()
     fake.content = [MagicMock(text=text)]
+    fake.usage = MagicMock(input_tokens=input_tokens, output_tokens=output_tokens)
     return fake
 
 
@@ -54,6 +61,7 @@ def test_generate_answer_returns_answer_and_sources(mock_get_client):
         "title": "Pairing",
         "url": "https://example.com/sony-pairing",
     }
+    assert result["usage"] == {"input_tokens": 42, "output_tokens": 17}
 
 
 @patch("src.generate.get_client")
@@ -97,6 +105,7 @@ def test_answer_skips_the_api_when_nothing_is_relevant(
 
     assert result["answer"] == NO_RELEVANT_INFO_ANSWER
     assert result["sources"] == []
+    assert result["usage"] == ZERO_USAGE
     mock_get_client.assert_not_called()
 
 

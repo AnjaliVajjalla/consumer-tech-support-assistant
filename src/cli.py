@@ -29,6 +29,7 @@ def main() -> None:
         for s in result["sources"]:
             print(f"  [{s['n']}] {s['product']} - {s['title']}")
             print(f"      {s['url']}")
+        print(f"Tokens used: {result['usage']['input_tokens']} in / {result['usage']['output_tokens']} out")
         print()
 
 

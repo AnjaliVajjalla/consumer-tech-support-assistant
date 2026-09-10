@@ -35,6 +35,8 @@ NO_RELEVANT_INFO_ANSWER = (
     "sources. Please check official support instead."
 )
 
+ZERO_USAGE = {"input_tokens": 0, "output_tokens": 0}
+
 _client = None
 
 
@@ -59,7 +61,9 @@ SYSTEM_PROMPT = (
     "user's question using ONLY the numbered sources below. Cite the "
     "source number(s) you used in brackets, like [1], right after each "
     "claim. If the sources don't contain the answer, say so plainly and "
-    "recommend checking official support instead of guessing."
+    "recommend checking official support instead of guessing. Write in "
+    "plain text: short paragraphs or a simple numbered list are fine, "
+    "but don't use markdown headers or bold text."
 )
 
 
@@ -86,7 +90,11 @@ def generate_answer(question: str, chunks: list[dict]) -> dict:
     ]
     sources = [s for s in all_sources if s["n"] in cited_numbers]
 
-    return {"answer": answer_text, "sources": sources}
+    usage = {
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens,
+    }
+    return {"answer": answer_text, "sources": sources, "usage": usage}
 
 
 def answer(question: str, top_k: int = 3) -> dict:
@@ -96,7 +104,7 @@ def answer(question: str, top_k: int = 3) -> dict:
 
     relevant_chunks = [c for c in top_chunks if c["score"] >= MIN_RELEVANCE_SCORE]
     if not relevant_chunks:
-        return {"answer": NO_RELEVANT_INFO_ANSWER, "sources": []}
+        return {"answer": NO_RELEVANT_INFO_ANSWER, "sources": [], "usage": ZERO_USAGE}
 
     return generate_answer(question, relevant_chunks)
 
@@ -111,6 +119,7 @@ def main() -> None:
     for s in result["sources"]:
         print(f"  [{s['n']}] {s['product']} - {s['title']}")
         print(f"      {s['url']}")
+    print(f"\nTokens used: {result['usage']['input_tokens']} in / {result['usage']['output_tokens']} out")
 
 
 if __name__ == "__main__":
