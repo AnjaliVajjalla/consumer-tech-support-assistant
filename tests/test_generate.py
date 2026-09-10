@@ -124,7 +124,7 @@ def test_answer_calls_the_api_when_chunks_are_relevant(
     mock_hybrid_retrieve.return_value = [
         {**c, "semantic_score": 0.6, "score": 0.6} for c in SAMPLE_CHUNKS
     ]
-    mock_rerank.return_value = SAMPLE_CHUNKS
+    mock_rerank.return_value = [{**c, "score": 5.0} for c in SAMPLE_CHUNKS]
     mock_client = MagicMock()
     mock_client.messages.create.return_value = _fake_response("Press the power button. [1]")
     mock_get_client.return_value = mock_client
@@ -133,6 +133,7 @@ def test_answer_calls_the_api_when_chunks_are_relevant(
 
     assert result["answer"] == "Press the power button. [1]"
     mock_get_client.assert_called_once()
+    assert set(result["trace"]) >= {"retrieve_ms", "rerank_ms", "generate_ms", "chunk_scores", "usage"}
 
 
 @patch("src.generate.rerank")
@@ -148,7 +149,7 @@ def test_answer_only_reranks_individually_relevant_candidates(
         {**SAMPLE_CHUNKS[0], "semantic_score": 0.6, "score": 0.6},
         {**SAMPLE_CHUNKS[1], "semantic_score": 0.02, "score": 0.5},
     ]
-    mock_rerank.return_value = [SAMPLE_CHUNKS[0]]
+    mock_rerank.return_value = [{**SAMPLE_CHUNKS[0], "score": 5.0}]
     mock_client = MagicMock()
     mock_client.messages.create.return_value = _fake_response("Press the power button. [1]")
     mock_get_client.return_value = mock_client
