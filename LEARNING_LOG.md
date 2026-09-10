@@ -137,12 +137,77 @@ back ranked first, not just that the script ran without errors."
 now fully code-complete: ingest -> chunk -> embed -> retrieve, each step
 tested. Merged into `main` via PR #13.
 
+## Sprint 3 — Source-grounded answers with citations (done, tested, reviewed)
+**What it is:** `src/generate.py` completes the RAG pipeline. `build_context`
+numbers retrieved chunks (`[1]`, `[2]`...) for the prompt. `generate_answer`
+sends those numbered sources + the question to Claude (via the Anthropic
+API), with a system prompt that forces it to answer only from the given
+sources, cite them inline, and say so plainly when the sources don't cover
+something. `answer(question)` chains the whole pipeline in one call:
+retrieve (Sprint 2) -> generate (Sprint 3). `src/cli.py` adds an interactive
+terminal loop to ask arbitrary questions.
+
+**Lesson: local vs. API, and why RAG's "G" needs a real LLM.** Sprints 1-2
+(ingest, chunk, embed, retrieve) all run locally and are free, a small
+model turns text into vectors for comparison. Sprint 3 is different:
+turning a question + passages into a coherent, correctly-cited written
+answer needs a real large language model, too big to run on a laptop, so
+that one step calls Anthropic's API over the network and costs a small
+amount per call. Retrieval finds the facts; generation is what makes it
+"retrieval-*augmented generation*."
+
+**Lesson: citations are built in code, not written by the model.** The
+model only ever sees/cites `[1]`, `[2]`, `[3]` in the prompt, it never
+writes out a URL itself. The `sources` list mapping numbers to real
+titles/URLs is built by our own code from the same trusted chunk data.
+That means a citation can be "pointing at the wrong source" (a retrieval
+or model error) but never a fabricated URL.
+
+**Bug found and fixed via live testing, not code review:** an early
+version returned every retrieved chunk as "sources," even when the model
+cited none of them (e.g. asking an off-topic question like "what's the
+capital of France?" still showed 3 headphone sources under a "sources
+cited" list, despite the answer correctly saying it couldn't help). Fixed
+by scanning the model's own answer text for `[n]` markers and filtering
+`sources` down to only what was actually cited. Caught by manually testing
+edge cases in the live CLI, not by a pre-written test, then confirmed with
+a new test (`test_generate_answer_returns_no_sources_when_none_are_cited`).
+
+**Tests:** `tests/test_generate.py` (5 tests, mocked API, no cost) — chunk
+numbering, empty-input edge case, sources correctly match what's cited,
+the real question/context gets sent to the API, and citing nothing returns
+no sources. `evals/test_citations.py` (2 tests, real API calls, kept
+separate from `tests/` since it costs money and tests actual model
+behavior, not just our code) — checks the model's own `[n]` citations in
+a generated answer point to the correct product, not just that the right
+chunk was retrieved nearby.
+
+**Manually verified live, beyond the automated tests:** correct grounded
+pairing steps with citations; correctly declined to answer about a
+product not in the corpus (Bose); correctly refused to invent a warranty
+policy (boundary from `PROJECT_BRIEF.md`); correctly admitted a source
+mentions a Sony reset exists but doesn't include the steps, rather than
+guessing them.
+
+**Interview answer:** "I built the generation step of a RAG pipeline:
+retrieved passages get numbered and passed to Claude with a system prompt
+that restricts it to only those sources and requires inline citations.
+The citation mapping to real URLs is built in my own code, not by the
+model, so URLs can't be hallucinated. While testing it live I found a real
+bug, the code was reporting sources the model never actually used, fixed
+it by checking which citation markers actually appear in the generated
+text, and added a test for that exact case."
+
+**Status:** Done. 23/23 mocked tests pass, 2/2 real citation evals pass.
+Built on branch `sprint-3-source-grounded-answers`. Not yet committed,
+pushed, or opened as a PR.
+
 ## Not started yet
-- Sprint 3: source-grounded answer generation + citations
 - Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
 
 ## Repo status
 GitHub remote is set up (`AnjaliVajjalla/consumer-tech-support-assistant`,
 private). Workflow per sprint: branch off `main`, build + test locally,
 commit, push, open a PR, merge only after explicit confirmation, then pull
-`main` locally. Sprint 2's chunking work followed this via PR #11.
+`main` locally. Sprint 2's chunking work followed this via PR #11. Sprint 3
+followed the same pattern on branch `sprint-3-source-grounded-answers`.
