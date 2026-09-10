@@ -40,6 +40,48 @@ GOLDEN_SET = [
      "expected_doc_id": "airpods_pro2__connection_troubleshooting"},
     {"question": "status light flashes white",
      "expected_doc_id": "airpods_pro2__connection_troubleshooting"},
+    # Sprint 7 additions: harder phrasing, model-specific details, and a
+    # few deliberately ambiguous cases. sony_wh1000xm5__pairing and
+    # sony_wh1000xm5__pairing_troubleshooting genuinely share overlapping
+    # language (both mention the 1-meter proximity requirement and the
+    # "press and hold power button for 5 seconds" step), so some of these
+    # are honestly hard - a real, documented limitation, not a bug.
+    {"question": "How many Bluetooth devices can the Sony WH-1000XM5 remember at once?",
+     "expected_doc_id": "sony_wh1000xm5__pairing"},
+    {"question": "Do I need to re-pair my Sony headphones every time I turn them on?",
+     "expected_doc_id": "sony_wh1000xm5__pairing"},
+    {"question": "What passkey do I need if my computer asks for one while pairing Sony headphones?",
+     "expected_doc_id": "sony_wh1000xm5__pairing"},
+    {"question": "What happens if I leave my Sony headphones in pairing mode without connecting anything?",
+     "expected_doc_id": "sony_wh1000xm5__pairing"},
+    {"question": "My Sony headphones won't reconnect to a phone I've paired with before, what should I try?",
+     "expected_doc_id": "sony_wh1000xm5__pairing_troubleshooting"},
+    {"question": "How do I completely reset my Sony WH-1000XM5 back to factory settings?",
+     "expected_doc_id": "sony_wh1000xm5__pairing_troubleshooting"},
+    {"question": "If restarting my phone doesn't fix Sony pairing issues, what else can I try?",
+     "expected_doc_id": "sony_wh1000xm5__pairing_troubleshooting"},
+    {"question": "What Bluetooth version do the AirPods Pro 2 use?",
+     "expected_doc_id": "airpods_pro2__tech_specs"},
+    {"question": "Are the AirPods Pro 2 water or sweat resistant?",
+     "expected_doc_id": "airpods_pro2__tech_specs"},
+    {"question": "What chip is inside the AirPods Pro 2 charging case?",
+     "expected_doc_id": "airpods_pro2__tech_specs"},
+    {"question": "Can the AirPods Pro 2 be used for a hearing test?",
+     "expected_doc_id": "airpods_pro2__tech_specs"},
+    {"question": "How much does a single AirPods Pro 2 earbud weigh?",
+     "expected_doc_id": "airpods_pro2__tech_specs"},
+    {"question": "What are the dimensions of the AirPods Pro 2 charging case?",
+     "expected_doc_id": "airpods_pro2__tech_specs"},
+    {"question": "What's the very first thing to check if my AirPods won't connect to my iPhone?",
+     "expected_doc_id": "airpods_pro2__connection_troubleshooting"},
+    {"question": "How do I reset the AirPods Pro 2 charging case?",
+     "expected_doc_id": "airpods_pro2__connection_troubleshooting"},
+    {"question": "If the status light on my AirPods case is flashing white, what does that mean?",
+     "expected_doc_id": "airpods_pro2__connection_troubleshooting"},
+    {"question": "Do I tap or press and hold to put AirPods 4 into pairing mode?",
+     "expected_doc_id": "airpods_pro2__connection_troubleshooting"},
+    {"question": "How close does my phone need to be to my Sony headphones to start pairing?",
+     "expected_doc_id": "sony_wh1000xm5__pairing"},
 ]
 
 

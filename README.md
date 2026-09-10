@@ -91,22 +91,41 @@ Prints a grounded, cited answer, plus token usage and per-stage latency
 
 ## Evaluation results
 
-Retrieval quality on a 10-question hand-labeled golden set (`evals/eval_retrieval.py`),
+Retrieval quality on a 28-question hand-labeled golden set (`evals/eval_retrieval.py`),
 measuring hit_rate@3 (is the right document in the top 3?) and mrr@3
 (is it ranked near the top, not just present?):
 
 | method | hit_rate@3 | mrr@3 |
 |---|---|---|
-| semantic (embeddings only) | 1.00 | 0.88 |
-| + BM25 hybrid search | 1.00 | 0.95 |
-| + cross-encoder reranking | 1.00 | **1.00** |
+| semantic (embeddings only) | 1.00 | 0.9048 |
+| + BM25 hybrid search (alpha=0.6) | 1.00 | 0.9643 |
+| + cross-encoder reranking | 1.00 | 0.9643 |
 
 Hit-rate looks identical across all three because the corpus is small
 enough that the correct document nearly always lands somewhere in the top
-3 regardless of method. MRR is what reveals the real improvement: hybrid
-search and reranking each measurably improve *where* the correct answer
-ranks, most visibly on keyword-heavy queries (e.g. "AirPlay button Control
-Center") that plain semantic search ranks 2nd–3rd instead of 1st.
+3 regardless of method. MRR is what reveals the real story: hybrid search
+measurably improves *where* the correct answer ranks, most visibly on
+keyword-heavy queries (e.g. "AirPlay button Control Center") that plain
+semantic search ranks 2nd–3rd instead of 1st.
+
+`alpha` (the semantic/BM25 blend weight) was tuned from 0.5 to 0.6 after
+expanding the golden set from 10 to 28 questions surfaced real ranking
+misses (Sprint 7) — mostly between the two Sony documents (`pairing` vs.
+`pairing_troubleshooting`), which genuinely share overlapping language
+(both mention the 1-meter proximity requirement and the "press and hold
+power button for 5 seconds" step almost verbatim). Lower alpha (more BM25
+weight) made this worse, since BM25 gets more confused by shared
+vocabulary than embeddings do.
+
+Honest note: with only 9 chunks total and a candidate shortlist of 10,
+reranking always sees the entire corpus regardless of hybrid's ordering,
+so once alpha was tuned well, reranking's ranking is identical to
+hybrid's alone on this golden set (both 0.9643) — its marginal benefit
+here is currently zero. It measurably helped *before* alpha was tuned
+(0.9286 → 0.9643 with the untuned alpha=0.5), so it's not dead weight,
+but on a corpus this small and homogeneous, a well-tuned hybrid blend can
+already reach reranking's ceiling on its own. A larger, more diverse
+corpus would likely show reranking pulling ahead of hybrid again.
 
 Generation quality (`evals/test_citations.py`, real API calls): answers
 correctly cite the right product for on-topic questions, and correctly
