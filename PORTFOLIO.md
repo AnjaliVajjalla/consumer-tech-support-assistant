@@ -96,10 +96,16 @@ source covers.
 Docker image size: 9.82GB → 2.1GB after fixing an unnecessary GPU
 dependency.
 
+Every question's full pipeline (retrieval, reranking, generation —
+latency, token usage, and cost per stage) is traced in
+[Langfuse](https://langfuse.com), a real observability platform, not a
+local log file. One thing worth naming honestly: tracing had to be
+explicitly disabled for unit tests, since mocked test calls were
+initially sending fake trace data into the real project dashboard — an
+easy mistake in observability tooling that's worth knowing to check for.
+
 ## What I'd do next
 
-- Swap the hand-built latency/token logging for a real observability
-  tool (Langfuse), so traces are queryable rather than a flat log file.
 - Grow the source corpus meaningfully — the current 4-document corpus is
   intentionally small for a portfolio project, but a bigger, more varied
   corpus would be a fairer test of hybrid search and reranking, and would
@@ -109,7 +115,7 @@ dependency.
 
 Python, `sentence-transformers` (embeddings + cross-encoder reranking),
 `rank-bm25` (keyword search), the Anthropic API (Claude, for answer
-generation only), `pytest`, Docker.
+generation only), Langfuse (tracing), `pytest`, Docker.
 
 Full source, tests, and commit history: see the repository this file
 lives in.
