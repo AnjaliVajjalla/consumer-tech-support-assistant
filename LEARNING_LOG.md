@@ -237,8 +237,7 @@ it by checking which citation markers actually appear in the generated
 text, and added a test for that exact case."
 
 **Status:** Done. 25/25 mocked tests pass, 4/4 real citation evals pass.
-Built on branch `sprint-3-source-grounded-answers`, committed and pushed,
-open as PR #14, not yet merged.
+Merged into `main` via PR #14 (squash-merged).
 
 ## Not started yet
 - Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
