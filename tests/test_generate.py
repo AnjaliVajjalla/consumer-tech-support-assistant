@@ -91,15 +91,18 @@ def test_generate_answer_returns_no_sources_when_none_are_cited(mock_get_client)
     assert result["sources"] == []
 
 
-@patch("src.generate.retrieve")
+@patch("src.generate.rerank")
+@patch("src.generate.hybrid_retrieve")
 @patch("src.generate.load_chunks_with_embeddings")
 @patch("src.generate.get_client")
 def test_answer_skips_the_api_when_nothing_is_relevant(
-    mock_get_client, mock_load_chunks, mock_retrieve
+    mock_get_client, mock_load_chunks, mock_hybrid_retrieve, mock_rerank
 ):
     """A low-relevance question shouldn't reach the API at all, not just get a good refusal from it."""
     mock_load_chunks.return_value = SAMPLE_CHUNKS
-    mock_retrieve.return_value = [{**c, "score": 0.02} for c in SAMPLE_CHUNKS]
+    mock_hybrid_retrieve.return_value = [
+        {**c, "semantic_score": 0.02, "score": 0.02} for c in SAMPLE_CHUNKS
+    ]
 
     result = answer("What is the capital of France?")
 
@@ -107,16 +110,21 @@ def test_answer_skips_the_api_when_nothing_is_relevant(
     assert result["sources"] == []
     assert result["usage"] == ZERO_USAGE
     mock_get_client.assert_not_called()
+    mock_rerank.assert_not_called()
 
 
-@patch("src.generate.retrieve")
+@patch("src.generate.rerank")
+@patch("src.generate.hybrid_retrieve")
 @patch("src.generate.load_chunks_with_embeddings")
 @patch("src.generate.get_client")
 def test_answer_calls_the_api_when_chunks_are_relevant(
-    mock_get_client, mock_load_chunks, mock_retrieve
+    mock_get_client, mock_load_chunks, mock_hybrid_retrieve, mock_rerank
 ):
     mock_load_chunks.return_value = SAMPLE_CHUNKS
-    mock_retrieve.return_value = [{**c, "score": 0.6} for c in SAMPLE_CHUNKS]
+    mock_hybrid_retrieve.return_value = [
+        {**c, "semantic_score": 0.6, "score": 0.6} for c in SAMPLE_CHUNKS
+    ]
+    mock_rerank.return_value = [{**c, "score": 5.0} for c in SAMPLE_CHUNKS]
     mock_client = MagicMock()
     mock_client.messages.create.return_value = _fake_response("Press the power button. [1]")
     mock_get_client.return_value = mock_client
@@ -125,3 +133,29 @@ def test_answer_calls_the_api_when_chunks_are_relevant(
 
     assert result["answer"] == "Press the power button. [1]"
     mock_get_client.assert_called_once()
+    assert set(result["trace"]) >= {"retrieve_ms", "rerank_ms", "generate_ms", "chunk_scores", "usage"}
+
+
+@patch("src.generate.rerank")
+@patch("src.generate.hybrid_retrieve")
+@patch("src.generate.load_chunks_with_embeddings")
+@patch("src.generate.get_client")
+def test_answer_only_reranks_individually_relevant_candidates(
+    mock_get_client, mock_load_chunks, mock_hybrid_retrieve, mock_rerank
+):
+    """A relevant top candidate shouldn't drag an individually irrelevant one into the prompt."""
+    mock_load_chunks.return_value = SAMPLE_CHUNKS
+    mock_hybrid_retrieve.return_value = [
+        {**SAMPLE_CHUNKS[0], "semantic_score": 0.6, "score": 0.6},
+        {**SAMPLE_CHUNKS[1], "semantic_score": 0.02, "score": 0.5},
+    ]
+    mock_rerank.return_value = [{**SAMPLE_CHUNKS[0], "score": 5.0}]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = _fake_response("Press the power button. [1]")
+    mock_get_client.return_value = mock_client
+
+    answer("How do I pair?")
+
+    reranked_candidates = mock_rerank.call_args.args[1]
+    assert len(reranked_candidates) == 1
+    assert reranked_candidates[0]["chunk_id"] == "sony__c0"

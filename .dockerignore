@@ -1,8 +1,10 @@
-__pycache__/
-*.pyc
 .venv/
 venv/
+__pycache__/
+*.pyc
+.git/
 .env
-.DS_Store
 data/processed/
 data/traces/
+.pytest_cache/
+tests/

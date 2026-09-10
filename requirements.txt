@@ -4,3 +4,4 @@ pytest
 sentence-transformers
 anthropic
 python-dotenv
+rank-bm25
