@@ -1,0 +1,21 @@
+# AirPods Connection Troubleshooting Steps
+
+1. Update your device to the latest iOS, iPadOS, or macOS version.
+
+2. Charge your AirPods by placing both in the charging case and verifying they're charging properly.
+
+3. Enable Bluetooth through Settings on your iPhone/iPad or System Settings on Mac.
+
+4. Check Control Center and tap the AirPlay button to see if your AirPods appear in the device list. If they do, select them and test with audio.
+
+5. Reset the case by closing the lid, waiting 15 seconds, then opening it again.
+
+6. Enter pairing mode by either:
+   - Double-tapping the front of AirPods 4 or Pro 3 cases until the status light flashes white, OR
+   - Pressing and holding the setup button on other models' cases until the status light flashes white.
+
+7. Position the case next to your device with the lid open.
+
+8. Follow on-screen instructions to complete the pairing process.
+
+9. Reset your AirPods if connection still fails by accessing the reset instructions.

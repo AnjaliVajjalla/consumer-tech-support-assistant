@@ -1,0 +1,30 @@
+# AirPods Pro 2 with MagSafe Charging Case (USB-C) - Tech Specs
+
+Year Introduced: 2023
+
+Audio Technology
+The device features a custom high-excursion Apple driver and Pro-level Active Noise Cancellation alongside adaptive audio, transparency mode, and personalized spatial audio with head tracking capabilities.
+
+Hearing Health
+Includes hearing test and hearing aid features (FDA authorized), plus hearing protection functionality.
+
+Sensors & Chip
+Equipped with dual beamforming microphones, skin-detect sensor, and the Apple H2 headphone chip in earbuds, plus U1 chip in the charging case.
+
+Controls
+Touch controls enable media playback, call management, and volume adjustment. Voice activation works with Siri commands.
+
+Durability
+IP54 rated for dust, sweat, and water resistance across both earbuds and case.
+
+Dimensions & Weight
+Each earbud measures approximately 30.9mm height and weighs 5.3 grams. The charging case is 45.2mm tall, 60.6mm wide, and weighs 50.8 grams.
+
+Battery Life
+Up to 6 hours per charge on earbuds; total of 30 hours with case included.
+
+Connectivity
+Bluetooth 5.3 wireless technology enables device pairing.
+
+Environmental Features
+Incorporates recycled materials and meets energy efficiency standards.

@@ -1,0 +1,8 @@
+requests
+beautifulsoup4
+pytest
+sentence-transformers
+anthropic
+python-dotenv
+rank-bm25
+langfuse
