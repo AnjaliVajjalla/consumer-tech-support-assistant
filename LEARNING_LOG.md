@@ -239,8 +239,58 @@ text, and added a test for that exact case."
 **Status:** Done. 25/25 mocked tests pass, 4/4 real citation evals pass.
 Merged into `main` via PR #14 (squash-merged).
 
+## Sprint 4 — Evaluation, hybrid search, reranking, tracing, Docker, README (done, tested, reviewed)
+**What it is:** six pieces, done as one sprint on one branch, each its own
+checkpoint. `evals/eval_retrieval.py` scores retrieval against a 10-question
+hand-labeled golden set using hit_rate@3 and mrr@3. `src/bm25.py` adds
+keyword search (BM25); `hybrid_retrieve()` in `retrieve.py` blends it with
+semantic similarity. `src/rerank.py` re-scores a hybrid shortlist with a
+cross-encoder for a more accurate final order. `src/trace.py` times each
+pipeline stage and logs it. `Dockerfile` containerizes the whole thing.
+`README.md` documents all of it.
+
+**Lesson: hit-rate vs. MRR measure different things.** hit_rate@3 asks "is
+the right document anywhere in the top 3?" MRR asks "how close to #1 is
+it?" On this corpus both methods hit 1.00 hit-rate, but MRR climbed from
+0.88 (semantic) to 0.95 (+ hybrid) to 1.00 (+ reranking) — the real
+improvement was invisible to the looser metric.
+
+**Bug found and fixed via integration testing, not code review:**
+`hybrid_retrieve()`'s combined score is min-max normalized per query, so
+it always stretches to fill 0-1 even for a completely off-topic question.
+Reusing that score for the Sprint 3 relevance gate (`MIN_RELEVANCE_SCORE`)
+would have silently broken the Bose/warranty refusal behavior — nearly
+every question would look "relevant enough." Fixed by having
+`hybrid_retrieve()` also return each chunk's raw, un-normalized
+`semantic_score` for the gate to check, while the normalized blended
+`score` is used only for ranking. Confirmed the real Bose/warranty evals
+still pass after the fix.
+
+**Found and fixed a real Docker inefficiency:** `sentence-transformers`
+pulls in CUDA-enabled PyTorch by default, even for CPU-only use, bloating
+the image with unused `nvidia-*` packages. Installing the CPU-only torch
+wheel before `pip install -r requirements.txt` fixed it: image size went
+from 9.82GB to 2.1GB, verified by actually building both versions and
+comparing.
+
+**Tests:** 35 unit tests in `tests/` (free), 2 retrieval-quality regression
+tests in `evals/` (free), 4 real-API citation evals in `evals/` (unchanged
+behavior, re-verified after the reranking rewrite).
+
+**Interview answer:** "I added hybrid retrieval (semantic + BM25 keyword
+search) and cross-encoder reranking on top of the base RAG pipeline, then
+measured the improvement on a hand-labeled golden set — mrr@3 went from
+0.88 to 1.00 across the three methods. While integrating reranking I found
+a real bug: a normalized score I'd added for ranking would have broken an
+existing off-topic safety check if reused for relevance filtering, since
+normalization makes scores relative to each query rather than absolute. I
+also containerized the app with Docker and cut the image size by almost
+80% by fixing an unnecessary GPU dependency."
+
+**Status:** Done. Merged into `main` via PR #16 (squash-merged).
+
 ## Not started yet
-- Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
+Nothing currently planned. Next sprint's scope (if any) starts a new branch/PR.
 
 ## Repo status
 GitHub remote is set up (`AnjaliVajjalla/consumer-tech-support-assistant`,
@@ -248,3 +298,4 @@ private). Workflow per sprint: branch off `main`, build + test locally,
 commit, push, open a PR, merge only after explicit confirmation, then pull
 `main` locally. Sprint 2's chunking work followed this via PR #11. Sprint 3
 followed the same pattern on branch `sprint-3-source-grounded-answers`.
+Sprint 4 followed the same pattern on branch `sprint-4-eval-hybrid-rerank-ops` (PR #16).
