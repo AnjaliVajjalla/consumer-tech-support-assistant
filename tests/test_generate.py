@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from src.generate import build_context, generate_answer
+from src.generate import NO_RELEVANT_INFO_ANSWER, answer, build_context, generate_answer
 
 SAMPLE_CHUNKS = [
     {
@@ -81,3 +81,38 @@ def test_generate_answer_returns_no_sources_when_none_are_cited(mock_get_client)
     result = generate_answer("What's the capital of France?", SAMPLE_CHUNKS)
 
     assert result["sources"] == []
+
+
+@patch("src.generate.retrieve")
+@patch("src.generate.load_chunks_with_embeddings")
+@patch("src.generate.get_client")
+def test_answer_skips_the_api_when_nothing_is_relevant(
+    mock_get_client, mock_load_chunks, mock_retrieve
+):
+    """A low-relevance question shouldn't reach the API at all, not just get a good refusal from it."""
+    mock_load_chunks.return_value = SAMPLE_CHUNKS
+    mock_retrieve.return_value = [{**c, "score": 0.02} for c in SAMPLE_CHUNKS]
+
+    result = answer("What is the capital of France?")
+
+    assert result["answer"] == NO_RELEVANT_INFO_ANSWER
+    assert result["sources"] == []
+    mock_get_client.assert_not_called()
+
+
+@patch("src.generate.retrieve")
+@patch("src.generate.load_chunks_with_embeddings")
+@patch("src.generate.get_client")
+def test_answer_calls_the_api_when_chunks_are_relevant(
+    mock_get_client, mock_load_chunks, mock_retrieve
+):
+    mock_load_chunks.return_value = SAMPLE_CHUNKS
+    mock_retrieve.return_value = [{**c, "score": 0.6} for c in SAMPLE_CHUNKS]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = _fake_response("Press the power button. [1]")
+    mock_get_client.return_value = mock_client
+
+    result = answer("How do I pair?")
+
+    assert result["answer"] == "Press the power button. [1]"
+    mock_get_client.assert_called_once()

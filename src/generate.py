@@ -24,6 +24,17 @@ from retrieve import load_chunks_with_embeddings, retrieve  # noqa: E402
 
 MODEL_NAME = "claude-haiku-4-5-20251001"
 
+# Below this cosine similarity, a question is treated as unrelated to the
+# corpus (e.g. "what's the capital of France?") rather than sent to the
+# API. Picked from real scores: on-topic questions scored 0.42-0.67,
+# unrelated ones scored ~0.04 or below, so 0.15 sits safely in the gap.
+MIN_RELEVANCE_SCORE = 0.15
+
+NO_RELEVANT_INFO_ANSWER = (
+    "I don't have any information relevant to that question in these "
+    "sources. Please check official support instead."
+)
+
 _client = None
 
 
@@ -82,7 +93,12 @@ def answer(question: str, top_k: int = 3) -> dict:
     """Answer a question end-to-end: retrieve relevant chunks, then generate a grounded, cited answer."""
     chunks = load_chunks_with_embeddings()
     top_chunks = retrieve(question, chunks, top_k=top_k)
-    return generate_answer(question, top_chunks)
+
+    relevant_chunks = [c for c in top_chunks if c["score"] >= MIN_RELEVANCE_SCORE]
+    if not relevant_chunks:
+        return {"answer": NO_RELEVANT_INFO_ANSWER, "sources": []}
+
+    return generate_answer(question, relevant_chunks)
 
 
 def main() -> None:

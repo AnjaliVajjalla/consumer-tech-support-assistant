@@ -173,11 +173,26 @@ by scanning the model's own answer text for `[n]` markers and filtering
 edge cases in the live CLI, not by a pre-written test, then confirmed with
 a new test (`test_generate_answer_returns_no_sources_when_none_are_cited`).
 
-**Tests:** `tests/test_generate.py` (5 tests, mocked API, no cost) — chunk
+**Extension: a relevance threshold, not just the prompt, blocks off-topic
+questions.** Before this, `retrieve()` always returned its top 3 chunks no
+matter how irrelevant the question was, "what's the capital of France?"
+still got 3 headphone chunks handed to the model, and only the system
+prompt's instructions kept it from making something up. Checked real
+cosine similarity scores across several questions: on-topic ones scored
+0.42-0.67, totally unrelated ones scored ~0.04 or below, wrong-product-but-
+still-headphones ones (like Bose) stayed around 0.42. `MIN_RELEVANCE_SCORE
+= 0.15` in `generate.py` sits in that gap, so a genuinely unrelated
+question now short-circuits before any API call is made (free, instant),
+while a wrong-product question still reaches the model, which correctly
+says it doesn't cover that product. This is defense in depth: retrieval
+filters obvious nonsense, the prompt handles subtler judgment calls.
+
+**Tests:** `tests/test_generate.py` (7 tests, mocked API, no cost) — chunk
 numbering, empty-input edge case, sources correctly match what's cited,
-the real question/context gets sent to the API, and citing nothing returns
-no sources. `evals/test_citations.py` (2 tests, real API calls, kept
-separate from `tests/` since it costs money and tests actual model
+the real question/context gets sent to the API, citing nothing returns no
+sources, a low-relevance question skips the API entirely, and a relevant
+one still reaches it. `evals/test_citations.py` (2 tests, real API calls,
+kept separate from `tests/` since it costs money and tests actual model
 behavior, not just our code) — checks the model's own `[n]` citations in
 a generated answer point to the correct product, not just that the right
 chunk was retrieved nearby.
@@ -198,9 +213,9 @@ bug, the code was reporting sources the model never actually used, fixed
 it by checking which citation markers actually appear in the generated
 text, and added a test for that exact case."
 
-**Status:** Done. 23/23 mocked tests pass, 2/2 real citation evals pass.
-Built on branch `sprint-3-source-grounded-answers`. Not yet committed,
-pushed, or opened as a PR.
+**Status:** Done. 25/25 mocked tests pass, 2/2 real citation evals pass.
+Built on branch `sprint-3-source-grounded-answers`, committed and pushed,
+open as PR #14, not yet merged.
 
 ## Not started yet
 - Sprint 4-10: evaluation, BM25/hybrid search, reranking, tracing, Docker, README
