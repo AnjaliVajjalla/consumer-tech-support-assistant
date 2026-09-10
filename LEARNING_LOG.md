@@ -322,6 +322,50 @@ means before reusing it somewhere else."
 
 **Status:** Done. Merged into `main` via PR #16.
 
+## Sprint 7 — Expand the eval set, improve retrieval from failures (done, tested, reviewed)
+**What it is:** Grew `evals/eval_retrieval.py`'s golden set from 10 to 28
+questions — harder phrasing, model-specific details (e.g. AirPods 4's
+double-tap vs. other models' press-and-hold pairing gesture), and a few
+deliberately ambiguous cases.
+
+**Lesson: a bigger eval set finds real problems a small one can't.** The
+original 10-question set scored a perfect 1.00/1.00 and had nowhere left
+to show improvement. The expanded set surfaced genuine ranking misses,
+mostly between the two Sony documents (`pairing` vs.
+`pairing_troubleshooting`), which really do share overlapping language
+(the 1-meter proximity requirement, the "press and hold power button for
+5 seconds" step) almost verbatim.
+
+**Fix, backed by data, not a guess:** swept `hybrid_retrieve`'s `alpha`
+(the semantic/BM25 blend weight) from 0.3 to 0.7 against the expanded
+set. Lower alpha (more BM25 weight) made things worse — BM25 gets more
+confused by the two Sony docs' shared vocabulary than embeddings do.
+Changed the default from 0.5 to 0.6: mrr@3 improved from 0.9286 to
+0.9643, hit_rate@3 unchanged.
+
+**Honest finding, not glossed over:** with only 9 chunks total and a
+candidate shortlist of 10, reranking always sees the whole corpus
+regardless of hybrid's ordering. After tuning alpha, hybrid alone now
+matches hybrid+rerank exactly (both 0.9643) on this golden set —
+reranking's marginal benefit here is currently zero, though it did
+measurably help before alpha was tuned (0.9286 -> 0.9643 at the old
+alpha=0.5). A larger, more diverse corpus would likely show reranking
+pulling ahead of hybrid again.
+
+**Interview answer:** "I expanded my evaluation set from 10 to 28
+questions specifically to include harder, more ambiguous cases, which
+surfaced real ranking mistakes the smaller set couldn't see. I diagnosed
+the cause, two source documents with genuinely overlapping language, and
+fixed it by tuning a retrieval weight based on a real data sweep rather
+than guessing. I also found and reported an honest limitation: after
+that fix, my reranking step stopped adding measurable value on this
+particular evaluation set, because the corpus is small enough that a
+well-tuned simpler method reaches the same ceiling. Knowing why that
+happened, and saying so, matters more than pretending every improvement
+compounds forever."
+
+**Status:** Done. Merged into `main` via PR #19.
+
 ## Sprint 9 (partial) — Docker for reproducibility
 **What it is:** `Dockerfile` containerizes the project, building the
 corpus (ingest -> chunk -> embed) at image build time so the container
@@ -367,7 +411,7 @@ the README.
 Sprints above are labeled to match a more granular reference plan
 (Sprint 0: scope -> 1: ingestion -> 2: chunking/embeddings/retrieval ->
 3: generation/citations -> 4: eval baseline -> 5: BM25/hybrid -> 6:
-reranking -> 7: expand eval set (not started) -> 8: tracing tool
+reranking -> 7: expand eval set -> 8: tracing tool
 (interim only) -> 9: pytest + Docker (Docker done, pytest ongoing since
 Sprint 1) -> 10: repo/board/README (README done, board not started)).
 Sprints 4, 5, 6, and the Docker part of 9 were all built and merged
@@ -376,8 +420,6 @@ before this exact sprint numbering was set — the write-up above is split
 to match it even though the git history isn't.
 
 ## Not started yet
-- Sprint 7: expand the evaluation set to 20-50 questions and improve
-  retrieval using documented failures
 - Sprint 8: swap the interim custom tracing for a real tool (LangSmith or
   Langfuse)
 - Sprint 10: GitHub project board, plus a fuller results/limitations/
@@ -389,5 +431,7 @@ private). Workflow per sprint: branch off `main`, build + test locally,
 commit, push, open a PR, merge only after explicit confirmation, then pull
 `main` locally. Sprint 2's chunking work followed this via PR #11. Sprint 3
 followed the same pattern on branch `sprint-3-source-grounded-answers`.
+Sprint 7 followed the same pattern on branch `sprint-7-eval-set-expansion`
+(PR #19).
 Sprints 4-6 and part of 8-9 followed the same pattern on branch
 `sprint-4-eval-hybrid-rerank-ops` (PR #16).
