@@ -12,7 +12,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from retrieve import load_chunks_with_embeddings, retrieve  # noqa: E402
+from retrieve import load_chunks_with_embeddings, retrieve, hybrid_retrieve  # noqa: E402
 
 GOLDEN_SET = [
     {"question": "How do I pair my Sony WH-1000XM5 headphones with a new Bluetooth device?",
@@ -31,6 +31,14 @@ GOLDEN_SET = [
      "expected_doc_id": "airpods_pro2__tech_specs"},
     {"question": "What is the first troubleshooting step if Sony headphones fail to pair?",
      "expected_doc_id": "sony_wh1000xm5__pairing_troubleshooting"},
+    # Keyword-heavy cases (Sprint 4): phrased the way a user reading exact
+    # on-screen text would type it. Plain semantic search ranks the correct
+    # doc 2nd-3rd here instead of 1st, since "AirPlay"/"status light" are
+    # short, generic-sounding tokens; BM25's exact term match fixes it.
+    {"question": "AirPlay button Control Center",
+     "expected_doc_id": "airpods_pro2__connection_troubleshooting"},
+    {"question": "status light flashes white",
+     "expected_doc_id": "airpods_pro2__connection_troubleshooting"},
 ]
 
 
@@ -57,11 +65,20 @@ def mean_reciprocal_rank(retrieve_fn, chunks, golden_set=GOLDEN_SET, k=3) -> flo
     return sum(reciprocal_ranks) / len(reciprocal_ranks)
 
 
+METHODS = {
+    "semantic": retrieve,
+    "hybrid": hybrid_retrieve,
+}
+
+
 def main() -> None:
     chunks = load_chunks_with_embeddings()
     print(f"Golden set: {len(GOLDEN_SET)} questions\n")
     print(f"{'method':<12}{'hit_rate@3':<12}{'mrr@3':<12}")
-    print(f"{'semantic':<12}{hit_rate_at_k(retrieve, chunks):<12.2f}{mean_reciprocal_rank(retrieve, chunks):<12.2f}")
+    for name, retrieve_fn in METHODS.items():
+        hit_rate = hit_rate_at_k(retrieve_fn, chunks)
+        mrr = mean_reciprocal_rank(retrieve_fn, chunks)
+        print(f"{name:<12}{hit_rate:<12.2f}{mrr:<12.2f}")
 
 
 if __name__ == "__main__":
