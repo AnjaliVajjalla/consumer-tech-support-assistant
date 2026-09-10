@@ -14,6 +14,7 @@ from pathlib import Path
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
+from langfuse import get_client as get_langfuse_client
 
 load_dotenv()
 
@@ -38,6 +39,8 @@ NO_RELEVANT_INFO_ANSWER = (
 )
 
 ZERO_USAGE = {"input_tokens": 0, "output_tokens": 0}
+
+langfuse = get_langfuse_client()
 
 _client = None
 
@@ -74,28 +77,39 @@ def generate_answer(question: str, chunks: list[dict]) -> dict:
     context = build_context(chunks)
     client = get_client()
 
-    response = client.messages.create(
+    with langfuse.start_as_current_observation(
+        name="generate_answer",
+        as_type="generation",
         model=MODEL_NAME,
-        max_tokens=500,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {"role": "user", "content": f"Sources:\n{context}\n\nQuestion: {question}"}
-        ],
-    )
+        input={"question": question, "num_sources": len(chunks)},
+    ) as generation:
+        response = client.messages.create(
+            model=MODEL_NAME,
+            max_tokens=500,
+            system=SYSTEM_PROMPT,
+            messages=[
+                {"role": "user", "content": f"Sources:\n{context}\n\nQuestion: {question}"}
+            ],
+        )
 
-    answer_text = response.content[0].text
-    cited_numbers = {int(n) for n in re.findall(r"\[(\d+)\]", answer_text)}
+        answer_text = response.content[0].text
+        cited_numbers = {int(n) for n in re.findall(r"\[(\d+)\]", answer_text)}
 
-    all_sources = [
-        {"n": i, "product": c["product"], "title": c["title"], "url": c["url"]}
-        for i, c in enumerate(chunks, start=1)
-    ]
-    sources = [s for s in all_sources if s["n"] in cited_numbers]
+        all_sources = [
+            {"n": i, "product": c["product"], "title": c["title"], "url": c["url"]}
+            for i, c in enumerate(chunks, start=1)
+        ]
+        sources = [s for s in all_sources if s["n"] in cited_numbers]
 
-    usage = {
-        "input_tokens": response.usage.input_tokens,
-        "output_tokens": response.usage.output_tokens,
-    }
+        usage = {
+            "input_tokens": response.usage.input_tokens,
+            "output_tokens": response.usage.output_tokens,
+        }
+        generation.update(
+            output=answer_text,
+            usage_details={"input": usage["input_tokens"], "output": usage["output_tokens"]},
+        )
+
     return {"answer": answer_text, "sources": sources, "usage": usage}
 
 
@@ -105,26 +119,39 @@ def answer(question: str, top_k: int = 3, candidate_k: int = 10) -> dict:
     generate a grounded, cited answer. Returns a trace of stage timing
     and usage alongside the result."""
     trace = {"question": question, "model": MODEL_NAME}
-    chunks = load_chunks_with_embeddings()
 
-    with time_stage(trace, "retrieve"):
-        candidates = hybrid_retrieve(question, chunks, top_k=candidate_k)
+    with langfuse.start_as_current_observation(
+        name="answer", as_type="span", input={"question": question}
+    ) as trace_span:
+        chunks = load_chunks_with_embeddings()
 
-    relevant_candidates = [c for c in candidates if c["semantic_score"] >= MIN_RELEVANCE_SCORE]
-    if not relevant_candidates:
-        trace.update(rerank_ms=0.0, generate_ms=0.0, chunk_scores=[], usage=ZERO_USAGE)
-        return {"answer": NO_RELEVANT_INFO_ANSWER, "sources": [], "usage": ZERO_USAGE, "trace": trace}
+        with time_stage(trace, "retrieve"), langfuse.start_as_current_observation(
+            name="hybrid_retrieve", as_type="retriever", input={"candidate_k": candidate_k}
+        ) as retrieve_span:
+            candidates = hybrid_retrieve(question, chunks, top_k=candidate_k)
+            retrieve_span.update(output=[c["chunk_id"] for c in candidates])
 
-    with time_stage(trace, "rerank"):
-        top_chunks = rerank(question, relevant_candidates, top_k=top_k)
-    trace["chunk_scores"] = [round(c["score"], 3) for c in top_chunks]
+        relevant_candidates = [c for c in candidates if c["semantic_score"] >= MIN_RELEVANCE_SCORE]
+        if not relevant_candidates:
+            trace.update(rerank_ms=0.0, generate_ms=0.0, chunk_scores=[], usage=ZERO_USAGE)
+            result = {"answer": NO_RELEVANT_INFO_ANSWER, "sources": [], "usage": ZERO_USAGE, "trace": trace}
+            trace_span.update(output=result["answer"])
+            return result
 
-    with time_stage(trace, "generate"):
-        result = generate_answer(question, top_chunks)
+        with time_stage(trace, "rerank"), langfuse.start_as_current_observation(
+            name="rerank", as_type="span", input={"candidate_count": len(relevant_candidates)}
+        ) as rerank_span:
+            top_chunks = rerank(question, relevant_candidates, top_k=top_k)
+            rerank_span.update(output=[c["chunk_id"] for c in top_chunks])
+        trace["chunk_scores"] = [round(c["score"], 3) for c in top_chunks]
 
-    trace["usage"] = result["usage"]
-    result["trace"] = trace
-    return result
+        with time_stage(trace, "generate"):
+            result = generate_answer(question, top_chunks)
+
+        trace["usage"] = result["usage"]
+        result["trace"] = trace
+        trace_span.update(output=result["answer"])
+        return result
 
 
 def main() -> None:
@@ -138,6 +165,7 @@ def main() -> None:
         print(f"  [{s['n']}] {s['product']} - {s['title']}")
         print(f"      {s['url']}")
     print(f"\nTokens used: {result['usage']['input_tokens']} in / {result['usage']['output_tokens']} out")
+    langfuse.flush()
 
 
 if __name__ == "__main__":

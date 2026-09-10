@@ -9,8 +9,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from generate import answer  # noqa: E402
-from trace import save_trace  # noqa: E402
+from generate import answer, langfuse  # noqa: E402
 
 
 def main() -> None:
@@ -36,7 +35,7 @@ def main() -> None:
             f"Latency: retrieve {trace['retrieve_ms']}ms, "
             f"rerank {trace['rerank_ms']}ms, generate {trace['generate_ms']}ms"
         )
-        save_trace(trace)
+        langfuse.flush()
         print()
 
 

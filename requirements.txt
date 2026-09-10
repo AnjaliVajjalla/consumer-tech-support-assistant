@@ -5,3 +5,4 @@ sentence-transformers
 anthropic
 python-dotenv
 rank-bm25
+langfuse

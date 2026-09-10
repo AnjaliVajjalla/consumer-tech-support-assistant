@@ -55,9 +55,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file with your Anthropic API key:
+Create a `.env` file with your Anthropic API key, and optionally Langfuse
+keys for tracing ([cloud.langfuse.com](https://cloud.langfuse.com), free
+tier):
 ```
 ANTHROPIC_API_KEY=sk-...
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=https://us.cloud.langfuse.com
 ```
 
 ## Running the pipeline
@@ -75,12 +80,17 @@ python -m src.embed    # -> data/processed/embeddings.json
 python -m src.cli
 ```
 Prints a grounded, cited answer, plus token usage and per-stage latency
-(retrieve/rerank/generate) for every question. Traces append to
-`data/traces/traces.jsonl` (gitignored).
+(retrieve/rerank/generate) for every question. Full traces (per-stage
+input/output, latency, token usage, and cost) are sent to
+[Langfuse](https://langfuse.com) — set `LANGFUSE_PUBLIC_KEY`,
+`LANGFUSE_SECRET_KEY`, and `LANGFUSE_BASE_URL` in `.env` to enable it.
+Tracing is automatically disabled for `tests/` (mocked calls shouldn't
+send real trace data) but stays on for `evals/`, since its real API
+calls should produce real traces, same as they cost real tokens.
 
 ## Testing vs. evaluation
 
-- `pytest tests/` — unit tests (35 tests, free, no API calls). Checks the
+- `pytest tests/` — unit tests (34 tests, free, no API calls). Checks the
   *code* behaves correctly: does chunking overlap correctly, does BM25 rank
   an exact keyword match first, does the citation filter drop uncited
   sources.
