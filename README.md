@@ -4,6 +4,9 @@ A retrieval-augmented generation (RAG) assistant that answers setup,
 troubleshooting, and spec questions about two wireless headphone products,
 grounded in official manuals and support pages, with citations.
 
+For a non-technical case-study version of this project (the problem,
+key decisions, real findings, results), see `PORTFOLIO.md`.
+
 ## Why this project exists
 
 Built for hands-on practice with the full RAG pipeline: document ingestion,
