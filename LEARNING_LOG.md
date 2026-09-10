@@ -398,22 +398,41 @@ hosted dashboard or searchable trace history.
 **Status:** Interim version done (part of PR #16). Swapping in a real
 tracing tool is still open.
 
-## Sprint 10 (partial) — README and documentation
-**What it is:** `README.md` documents architecture, setup, how to run
-and test, real eval results, Docker usage, and known limitations. The
-GitHub repo itself has existed since Sprint 0.
+## Sprint 10 — GitHub project board, README, portfolio write-up (done, tested, reviewed)
+**What it is:** `README.md` documents architecture, setup, how to run and
+test, real eval results, Docker usage, and known limitations (part of PR
+#16). `PORTFOLIO.md` (PR #22) is a separate case-study write-up aimed at
+a non-technical reader — recruiter or interviewer — rather than someone
+setting up the project: the problem, key decisions defended with real
+evidence, the two real bugs caught during development, and results,
+linked from the top of `README.md`.
 
-**Status:** README done (part of PR #16). Still open: a GitHub project
-board, and a fuller portfolio-style results/limitations write-up beyond
-the README.
+**Lesson: a project board only means something if it's kept in sync.**
+Found a pre-existing GitHub project board (10 issues, set up early in the
+project) whose sprint numbering matched neither the actual git history
+nor the reference sprint plan, and whose Status field had been stuck on
+"Todo" for every item except two manually-closed issues. Relabeled the
+mismatched issues (#8-10) to match the reference plan, created the
+missing Sprint 10 issue (#21), and set every item's real status — which
+revealed the board has a built-in automation that auto-closes an issue
+the moment its Status is set to "Done," explaining why the board had
+drifted: nobody had been setting that field as work finished.
+
+**Interview answer:** "I also wrote a separate portfolio-style case study
+distinct from the technical README, aimed at someone evaluating the
+project from a resume link rather than reading the code, and reconciled
+a project board that had drifted out of sync with actual progress since
+early in the project."
+
+**Status:** Done. README part of PR #16; portfolio write-up merged via
+PR #22; project board reconciled directly via `gh` (issue #21 closed).
 
 ## Note on sprint numbering
 Sprints above are labeled to match a more granular reference plan
 (Sprint 0: scope -> 1: ingestion -> 2: chunking/embeddings/retrieval ->
 3: generation/citations -> 4: eval baseline -> 5: BM25/hybrid -> 6:
 reranking -> 7: expand eval set -> 8: tracing tool
-(interim only) -> 9: pytest + Docker (Docker done, pytest ongoing since
-Sprint 1) -> 10: repo/board/README (README done, board not started)).
+(interim only) -> 9: pytest + Docker -> 10: repo/board/README/portfolio).
 Sprints 4, 5, 6, and the Docker part of 9 were all built and merged
 together as one git branch/PR (`sprint-4-eval-hybrid-rerank-ops`, PR #16)
 before this exact sprint numbering was set — the write-up above is split
@@ -421,17 +440,18 @@ to match it even though the git history isn't.
 
 ## Not started yet
 - Sprint 8: swap the interim custom tracing for a real tool (LangSmith or
-  Langfuse)
-- Sprint 10: GitHub project board, plus a fuller results/limitations/
-  portfolio write-up in the README
+  Langfuse) — needs a signup/API key from Anjali before this can proceed
 
 ## Repo status
 GitHub remote is set up (`AnjaliVajjalla/consumer-tech-support-assistant`,
-private). Workflow per sprint: branch off `main`, build + test locally,
-commit, push, open a PR, merge only after explicit confirmation, then pull
-`main` locally. Sprint 2's chunking work followed this via PR #11. Sprint 3
-followed the same pattern on branch `sprint-3-source-grounded-answers`.
-Sprint 7 followed the same pattern on branch `sprint-7-eval-set-expansion`
-(PR #19).
+private). Project board: https://github.com/users/AnjaliVajjalla/projects/2
+(reconciled to match the reference sprint plan as of Sprint 10). Workflow
+per sprint: branch off `main`, build + test locally, commit, push, open a
+PR, merge only after explicit confirmation, then pull `main` locally.
+Sprint 2's chunking work followed this via PR #11. Sprint 3 followed the
+same pattern on branch `sprint-3-source-grounded-answers`. Sprint 7
+followed the same pattern on branch `sprint-7-eval-set-expansion` (PR
+#19). Sprint 10's portfolio write-up followed the same pattern on branch
+`sprint-10-portfolio-writeup` (PR #22).
 Sprints 4-6 and part of 8-9 followed the same pattern on branch
 `sprint-4-eval-hybrid-rerank-ops` (PR #16).
