@@ -239,58 +239,149 @@ text, and added a test for that exact case."
 **Status:** Done. 25/25 mocked tests pass, 4/4 real citation evals pass.
 Merged into `main` via PR #14 (squash-merged).
 
-## Sprint 4 — Evaluation, hybrid search, reranking, tracing, Docker, README (done, tested, reviewed)
-**What it is:** six pieces, done as one sprint on one branch, each its own
-checkpoint. `evals/eval_retrieval.py` scores retrieval against a 10-question
-hand-labeled golden set using hit_rate@3 and mrr@3. `src/bm25.py` adds
-keyword search (BM25); `hybrid_retrieve()` in `retrieve.py` blends it with
-semantic similarity. `src/rerank.py` re-scores a hybrid shortlist with a
-cross-encoder for a more accurate final order. `src/trace.py` times each
-pipeline stage and logs it. `Dockerfile` containerizes the whole thing.
-`README.md` documents all of it.
+## Sprint 4 — Initial evaluation questions and retrieval baseline (done, tested, reviewed)
+**What it is:** `evals/eval_retrieval.py` — a 10-question hand-labeled
+golden set (question -> expected source document), scored with
+hit_rate@3 (is the right document in the top 3?) and mrr@3 (how close to
+#1 is it?). `evals/test_retrieval_quality.py` locks in a regression
+threshold so future changes can't silently make retrieval worse.
 
-**Lesson: hit-rate vs. MRR measure different things.** hit_rate@3 asks "is
-the right document anywhere in the top 3?" MRR asks "how close to #1 is
-it?" On this corpus both methods hit 1.00 hit-rate, but MRR climbed from
-0.88 (semantic) to 0.95 (+ hybrid) to 1.00 (+ reranking) — the real
-improvement was invisible to the looser metric.
+**Lesson: hit-rate vs. MRR measure different things.** hit_rate@3 asks
+"is the right document anywhere in the top 3?" MRR asks "how close to #1
+is it?" Two systems can tie on hit-rate while one consistently ranks the
+right answer 1st and the other 3rd — MRR is what catches that.
+
+**Baseline:** plain semantic (embedding) retrieval scores hit_rate@3 =
+1.00, mrr@3 = 0.88 on the golden set.
+
+**Interview answer:** "Before improving retrieval, I built a small
+hand-labeled golden set and two metrics, hit-rate and mean reciprocal
+rank, so later changes have a real number to be measured against instead
+of eyeballing whether answers look better."
+
+**Status:** Done. Merged into `main` via PR #16 (built together with
+Sprints 5-6 and part of 9 on one branch — see note below).
+
+## Sprint 5 — BM25 and hybrid search vs. semantic retrieval (done, tested, reviewed)
+**What it is:** `src/bm25.py` adds keyword search (BM25: scores exact
+term overlap, weighted so rare words count more than common ones).
+`hybrid_retrieve()` in `retrieve.py` blends BM25 with the existing
+semantic (embedding) score via min-max normalization, so the two
+differently-scaled scores can be combined by a weight (`alpha`).
+
+**Lesson: embeddings catch meaning, BM25 catches exact terms.** Found two
+real cases in the corpus where plain semantic search ranked the correct
+document 2nd-3rd instead of 1st on keyword-heavy queries ("AirPlay button
+Control Center," "status light flashes white") — phrasing close to what
+someone reading exact on-screen text would type. BM25 fixed both by
+matching the literal words.
+
+**Result:** hybrid search improved mrr@3 from 0.88 to 0.95 (hit_rate@3
+stayed 1.00 either way — the improvement was only visible in the stricter
+metric).
+
+**Interview answer:** "I added BM25 keyword search alongside the
+existing semantic search and combined them into a hybrid score. I found
+two real questions where semantic search alone ranked the right document
+2nd or 3rd because the query was phrased as exact on-screen text rather
+than natural language — hybrid search fixed both, a concrete example of
+why production RAG systems usually combine both methods rather than
+relying on embeddings alone."
+
+**Status:** Done. Merged into `main` via PR #16.
+
+## Sprint 6 — Reranking (done, tested, reviewed)
+**What it is:** `src/rerank.py` re-scores a hybrid-retrieved candidate
+shortlist using a cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`),
+which judges the query and a chunk together instead of comparing
+separately-embedded vectors — slower, so it only runs on a small
+shortlist, but more accurate.
 
 **Bug found and fixed via integration testing, not code review:**
 `hybrid_retrieve()`'s combined score is min-max normalized per query, so
-it always stretches to fill 0-1 even for a completely off-topic question.
-Reusing that score for the Sprint 3 relevance gate (`MIN_RELEVANCE_SCORE`)
-would have silently broken the Bose/warranty refusal behavior — nearly
-every question would look "relevant enough." Fixed by having
-`hybrid_retrieve()` also return each chunk's raw, un-normalized
-`semantic_score` for the gate to check, while the normalized blended
-`score` is used only for ranking. Confirmed the real Bose/warranty evals
-still pass after the fix.
+it always stretches to fill 0-1 even for a completely off-topic
+question. Reusing that score for the Sprint 3 relevance gate
+(`MIN_RELEVANCE_SCORE`) would have silently broken the Bose/warranty
+refusal behavior — nearly every question would look "relevant enough."
+Fixed by having `hybrid_retrieve()` also return each chunk's raw,
+un-normalized `semantic_score` for the gate to check, while the
+normalized blended `score` is used only for ranking. Confirmed the real
+Bose/warranty evals still pass after the fix.
 
-**Found and fixed a real Docker inefficiency:** `sentence-transformers`
-pulls in CUDA-enabled PyTorch by default, even for CPU-only use, bloating
-the image with unused `nvidia-*` packages. Installing the CPU-only torch
+**Result:** adding reranking on top of hybrid search improved mrr@3 from
+0.95 to a perfect 1.00 on the golden set.
+
+**Interview answer:** "I added a cross-encoder reranking step after
+hybrid retrieval, which improved ranking quality further, mrr@3 went
+from 0.95 to 1.00. While integrating it I caught a real bug: a
+normalized score I'd built for ranking would have broken an existing
+off-topic safety check if reused for relevance filtering, since
+normalization makes scores relative to each query rather than absolute
+— a good example of why you have to think carefully about what a score
+means before reusing it somewhere else."
+
+**Status:** Done. Merged into `main` via PR #16.
+
+## Sprint 9 (partial) — Docker for reproducibility
+**What it is:** `Dockerfile` containerizes the project, building the
+corpus (ingest -> chunk -> embed) at image build time so the container
+starts ready to answer questions. `pytest` coverage across `tests/` and
+`evals/` was already in place since Sprint 1 and grew alongside every
+sprint since; this piece's new contribution was Docker.
+
+**Found and fixed a real inefficiency:** `sentence-transformers` pulls in
+CUDA-enabled PyTorch by default, even for CPU-only use, bloating the
+image with unused `nvidia-*` packages. Installing the CPU-only torch
 wheel before `pip install -r requirements.txt` fixed it: image size went
 from 9.82GB to 2.1GB, verified by actually building both versions and
 comparing.
 
-**Tests:** 35 unit tests in `tests/` (free), 2 retrieval-quality regression
-tests in `evals/` (free), 4 real-API citation evals in `evals/` (unchanged
-behavior, re-verified after the reranking rewrite).
+**Interview answer:** "I containerized the app with Docker and cut the
+image size by almost 80% by fixing an unnecessary GPU dependency that
+most people wouldn't think to check for on a CPU-only deployment."
 
-**Interview answer:** "I added hybrid retrieval (semantic + BM25 keyword
-search) and cross-encoder reranking on top of the base RAG pipeline, then
-measured the improvement on a hand-labeled golden set — mrr@3 went from
-0.88 to 1.00 across the three methods. While integrating reranking I found
-a real bug: a normalized score I'd added for ranking would have broken an
-existing off-topic safety check if reused for relevance filtering, since
-normalization makes scores relative to each query rather than absolute. I
-also containerized the app with Docker and cut the image size by almost
-80% by fixing an unnecessary GPU dependency."
+**Status:** Docker piece done (part of PR #16). pytest coverage has been
+continuous since Sprint 1.
 
-**Status:** Done. Merged into `main` via PR #16 (squash-merged).
+## Sprint 8 (interim version) — Pipeline tracing
+**What it is:** `src/trace.py` times each pipeline stage (retrieve,
+rerank, generate) and logs latency + token usage per question to
+`data/traces/traces.jsonl`. This is a simplified, hand-built stand-in for
+a real tracing tool (LangSmith or Langfuse) — it covers the same
+*concept* (per-stage latency, token usage, cost visibility) without a
+hosted dashboard or searchable trace history.
+
+**Status:** Interim version done (part of PR #16). Swapping in a real
+tracing tool is still open.
+
+## Sprint 10 (partial) — README and documentation
+**What it is:** `README.md` documents architecture, setup, how to run
+and test, real eval results, Docker usage, and known limitations. The
+GitHub repo itself has existed since Sprint 0.
+
+**Status:** README done (part of PR #16). Still open: a GitHub project
+board, and a fuller portfolio-style results/limitations write-up beyond
+the README.
+
+## Note on sprint numbering
+Sprints above are labeled to match a more granular reference plan
+(Sprint 0: scope -> 1: ingestion -> 2: chunking/embeddings/retrieval ->
+3: generation/citations -> 4: eval baseline -> 5: BM25/hybrid -> 6:
+reranking -> 7: expand eval set (not started) -> 8: tracing tool
+(interim only) -> 9: pytest + Docker (Docker done, pytest ongoing since
+Sprint 1) -> 10: repo/board/README (README done, board not started)).
+Sprints 4, 5, 6, and the Docker part of 9 were all built and merged
+together as one git branch/PR (`sprint-4-eval-hybrid-rerank-ops`, PR #16)
+before this exact sprint numbering was set — the write-up above is split
+to match it even though the git history isn't.
 
 ## Not started yet
-Nothing currently planned. Next sprint's scope (if any) starts a new branch/PR.
+- Sprint 7: expand the evaluation set to 20-50 questions and improve
+  retrieval using documented failures
+- Sprint 8: swap the interim custom tracing for a real tool (LangSmith or
+  Langfuse)
+- Sprint 10: GitHub project board, plus a fuller results/limitations/
+  portfolio write-up in the README
 
 ## Repo status
 GitHub remote is set up (`AnjaliVajjalla/consumer-tech-support-assistant`,
@@ -298,4 +389,5 @@ private). Workflow per sprint: branch off `main`, build + test locally,
 commit, push, open a PR, merge only after explicit confirmation, then pull
 `main` locally. Sprint 2's chunking work followed this via PR #11. Sprint 3
 followed the same pattern on branch `sprint-3-source-grounded-answers`.
-Sprint 4 followed the same pattern on branch `sprint-4-eval-hybrid-rerank-ops` (PR #16).
+Sprints 4-6 and part of 8-9 followed the same pattern on branch
+`sprint-4-eval-hybrid-rerank-ops` (PR #16).
