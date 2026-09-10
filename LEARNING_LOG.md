@@ -366,7 +366,7 @@ compounds forever."
 
 **Status:** Done. Merged into `main` via PR #19.
 
-## Sprint 9 (partial) — Docker for reproducibility
+## Sprint 9 — Docker for reproducibility (done, tested, reviewed)
 **What it is:** `Dockerfile` containerizes the project, building the
 corpus (ingest -> chunk -> embed) at image build time so the container
 starts ready to answer questions. `pytest` coverage across `tests/` and
@@ -387,16 +387,58 @@ most people wouldn't think to check for on a CPU-only deployment."
 **Status:** Docker piece done (part of PR #16). pytest coverage has been
 continuous since Sprint 1.
 
-## Sprint 8 (interim version) — Pipeline tracing
-**What it is:** `src/trace.py` times each pipeline stage (retrieve,
-rerank, generate) and logs latency + token usage per question to
-`data/traces/traces.jsonl`. This is a simplified, hand-built stand-in for
-a real tracing tool (LangSmith or Langfuse) — it covers the same
-*concept* (per-stage latency, token usage, cost visibility) without a
-hosted dashboard or searchable trace history.
+## Sprint 8 — Real tracing with Langfuse (done, tested, reviewed)
+**What it is:** `answer()` and `generate_answer()` in `src/generate.py`
+now wrap their real work in Langfuse spans — retrieve, rerank, and a
+`generation`-type span around the actual Claude call that captures the
+model name and real token usage. Langfuse computes real per-question
+dollar cost from that automatically. This replaces the Sprint 4 interim
+version's local `data/traces/traces.jsonl` file logging; `src/trace.py`'s
+`time_stage` helper stays, since it still powers the CLI's immediate
+printed latency line — Langfuse is the persisted, queryable record.
 
-**Status:** Interim version done (part of PR #16). Swapping in a real
-tracing tool is still open.
+**Lesson: mocking one dependency doesn't mock all of them.** Running the
+mocked unit tests (which mock the Anthropic client to avoid real API
+calls) was silently sending real trace data into the live Langfuse
+project — the literal mocked strings ("How do I pair?", "Press the power
+button.") showed up as real traces, since mocking `get_client()` for
+Anthropic does nothing to stop Langfuse's own client from firing. Fixed
+with `tests/conftest.py` setting `LANGFUSE_TRACING_ENABLED=false` for
+that directory only — `evals/` intentionally keeps tracing on, since its
+real API calls should produce real traces, same as they cost real
+tokens.
+
+**Bug found and fixed via verifying against the real dashboard, not by
+trusting the code:** Langfuse batches trace data and only sends it over
+the network on `flush()`. That call only existed in `cli.py` and
+`generate.py`'s demo `main()` — direct `answer()` calls from
+`evals/test_citations.py` never flushed, so only 1 of 4 real citation-
+eval traces was actually reaching Langfuse (the rest sat in an
+unflushed buffer, dependent on unreliable process-exit timing). Fixed
+with a session-scoped flush fixture in `evals/conftest.py`. Verified via
+Langfuse's own read API before and after: exactly +4 traces after the
+fix, not the prior +1.
+
+**Verified end-to-end, not just assumed:** a real CLI question produced
+a trace with 4 nested observations, correct latency, and a real computed
+cost ($0.001681), confirmed by querying Langfuse's API directly. Also
+confirmed the app still works with zero Langfuse setup — the client
+disables itself gracefully (one warning, no exception) rather than
+crashing, so this is additive, not a new hard requirement blocking
+anyone without a Langfuse account.
+
+**Interview answer:** "I integrated real tracing with Langfuse, so every
+question's full pipeline, latency, token usage, and cost per stage, is
+visible on a dashboard instead of a flat local log file. While
+integrating it I found two real observability bugs: my mocked unit
+tests were silently leaking fake data into the real project, since
+mocking one API client doesn't mock every external dependency, and most
+of my real evaluation traces weren't actually reaching the server
+because nothing was flushing them. I verified both the bug and the fix
+against the tracing platform's own API rather than trusting that the
+code looked right."
+
+**Status:** Done. Merged into `main` via PR #24.
 
 ## Sprint 10 — GitHub project board, README, portfolio write-up (done, tested, reviewed)
 **What it is:** `README.md` documents architecture, setup, how to run and
@@ -431,27 +473,29 @@ PR #22; project board reconciled directly via `gh` (issue #21 closed).
 Sprints above are labeled to match a more granular reference plan
 (Sprint 0: scope -> 1: ingestion -> 2: chunking/embeddings/retrieval ->
 3: generation/citations -> 4: eval baseline -> 5: BM25/hybrid -> 6:
-reranking -> 7: expand eval set -> 8: tracing tool
-(interim only) -> 9: pytest + Docker -> 10: repo/board/README/portfolio).
-Sprints 4, 5, 6, and the Docker part of 9 were all built and merged
-together as one git branch/PR (`sprint-4-eval-hybrid-rerank-ops`, PR #16)
-before this exact sprint numbering was set — the write-up above is split
-to match it even though the git history isn't.
+reranking -> 7: expand eval set -> 8: tracing tool -> 9: pytest + Docker
+-> 10: repo/board/README/portfolio). Sprints 4, 5, 6, and the Docker part
+of 9 were all built and merged together as one git branch/PR
+(`sprint-4-eval-hybrid-rerank-ops`, PR #16) before this exact sprint
+numbering was set — the write-up above is split to match it even though
+the git history isn't.
 
 ## Not started yet
-- Sprint 8: swap the interim custom tracing for a real tool (LangSmith or
-  Langfuse) — needs a signup/API key from Anjali before this can proceed
+Nothing. Every sprint on the reference plan (0-10) is done, tested, and
+reflected on the project board.
 
 ## Repo status
 GitHub remote is set up (`AnjaliVajjalla/consumer-tech-support-assistant`,
 private). Project board: https://github.com/users/AnjaliVajjalla/projects/2
-(reconciled to match the reference sprint plan as of Sprint 10). Workflow
-per sprint: branch off `main`, build + test locally, commit, push, open a
-PR, merge only after explicit confirmation, then pull `main` locally.
-Sprint 2's chunking work followed this via PR #11. Sprint 3 followed the
-same pattern on branch `sprint-3-source-grounded-answers`. Sprint 7
-followed the same pattern on branch `sprint-7-eval-set-expansion` (PR
-#19). Sprint 10's portfolio write-up followed the same pattern on branch
-`sprint-10-portfolio-writeup` (PR #22).
+(reconciled to match the reference sprint plan as of Sprint 10; all items
+Done as of Sprint 8). Workflow per sprint: branch off `main`, build +
+test locally, commit, push, open a PR, merge only after explicit
+confirmation, then pull `main` locally. Sprint 2's chunking work followed
+this via PR #11. Sprint 3 followed the same pattern on branch
+`sprint-3-source-grounded-answers`. Sprint 7 followed the same pattern on
+branch `sprint-7-eval-set-expansion` (PR #19). Sprint 10's portfolio
+write-up followed the same pattern on branch `sprint-10-portfolio-writeup`
+(PR #22). Sprint 8's Langfuse integration followed the same pattern on
+branch `sprint-8-langfuse-tracing` (PR #24).
 Sprints 4-6 and part of 8-9 followed the same pattern on branch
 `sprint-4-eval-hybrid-rerank-ops` (PR #16).
