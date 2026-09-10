@@ -13,6 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from retrieve import load_chunks_with_embeddings, retrieve, hybrid_retrieve  # noqa: E402
+from rerank import rerank  # noqa: E402
 
 GOLDEN_SET = [
     {"question": "How do I pair my Sony WH-1000XM5 headphones with a new Bluetooth device?",
@@ -65,20 +66,27 @@ def mean_reciprocal_rank(retrieve_fn, chunks, golden_set=GOLDEN_SET, k=3) -> flo
     return sum(reciprocal_ranks) / len(reciprocal_ranks)
 
 
+def hybrid_then_rerank(query: str, chunks: list[dict], top_k: int = 3) -> list[dict]:
+    """Retrieve a wider hybrid candidate shortlist, then rerank it down to top_k."""
+    candidates = hybrid_retrieve(query, chunks, top_k=10)
+    return rerank(query, candidates, top_k=top_k)
+
+
 METHODS = {
     "semantic": retrieve,
     "hybrid": hybrid_retrieve,
+    "hybrid+rerank": hybrid_then_rerank,
 }
 
 
 def main() -> None:
     chunks = load_chunks_with_embeddings()
     print(f"Golden set: {len(GOLDEN_SET)} questions\n")
-    print(f"{'method':<12}{'hit_rate@3':<12}{'mrr@3':<12}")
+    print(f"{'method':<16}{'hit_rate@3':<12}{'mrr@3':<12}")
     for name, retrieve_fn in METHODS.items():
         hit_rate = hit_rate_at_k(retrieve_fn, chunks)
         mrr = mean_reciprocal_rank(retrieve_fn, chunks)
-        print(f"{name:<12}{hit_rate:<12.2f}{mrr:<12.2f}")
+        print(f"{name:<16}{hit_rate:<12.2f}{mrr:<12.2f}")
 
 
 if __name__ == "__main__":

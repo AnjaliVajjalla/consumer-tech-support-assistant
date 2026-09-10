@@ -20,7 +20,8 @@ load_dotenv()
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from retrieve import load_chunks_with_embeddings, retrieve  # noqa: E402
+from retrieve import load_chunks_with_embeddings, hybrid_retrieve  # noqa: E402
+from rerank import rerank  # noqa: E402
 
 MODEL_NAME = "claude-haiku-4-5-20251001"
 
@@ -97,16 +98,19 @@ def generate_answer(question: str, chunks: list[dict]) -> dict:
     return {"answer": answer_text, "sources": sources, "usage": usage}
 
 
-def answer(question: str, top_k: int = 3) -> dict:
-    """Answer a question end-to-end: retrieve relevant chunks, then generate a grounded, cited answer."""
+def answer(question: str, top_k: int = 3, candidate_k: int = 10) -> dict:
+    """Answer a question end-to-end: hybrid-retrieve a candidate shortlist,
+    drop individually irrelevant ones, rerank with a cross-encoder, then
+    generate a grounded, cited answer."""
     chunks = load_chunks_with_embeddings()
-    top_chunks = retrieve(question, chunks, top_k=top_k)
+    candidates = hybrid_retrieve(question, chunks, top_k=candidate_k)
 
-    relevant_chunks = [c for c in top_chunks if c["score"] >= MIN_RELEVANCE_SCORE]
-    if not relevant_chunks:
+    relevant_candidates = [c for c in candidates if c["semantic_score"] >= MIN_RELEVANCE_SCORE]
+    if not relevant_candidates:
         return {"answer": NO_RELEVANT_INFO_ANSWER, "sources": [], "usage": ZERO_USAGE}
 
-    return generate_answer(question, relevant_chunks)
+    top_chunks = rerank(question, relevant_candidates, top_k=top_k)
+    return generate_answer(question, top_chunks)
 
 
 def main() -> None:

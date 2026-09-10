@@ -74,8 +74,8 @@ def hybrid_retrieve(query: str, chunks: list[dict], top_k: int = 3, alpha: float
     bm25_norm = _min_max_normalize(bm25_scores)
 
     scored = [
-        {**chunk, "score": alpha * s + (1 - alpha) * b}
-        for chunk, s, b in zip(chunks, semantic_norm, bm25_norm)
+        {**chunk, "semantic_score": sem, "score": alpha * s + (1 - alpha) * b}
+        for chunk, sem, s, b in zip(chunks, semantic_scores, semantic_norm, bm25_norm)
     ]
     scored.sort(key=lambda c: c["score"], reverse=True)
     return scored[:top_k]
