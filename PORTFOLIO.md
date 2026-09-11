@@ -28,7 +28,7 @@ handed to Claude to write a cited answer. Every stage is independently
 tested, and retrieval quality is measured against a hand-labeled set of
 real questions, not just eyeballed.
 
-## Decisions I'd defend in an interview
+## Design Decisions and Tradeoffs
 
 **Why hybrid search instead of just embeddings.** Embeddings are great at
 matching meaning but can underweight short, literal terms — a user
