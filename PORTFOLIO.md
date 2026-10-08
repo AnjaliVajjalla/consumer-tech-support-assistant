@@ -1,4 +1,4 @@
-# Consumer Technology Support Assistant — Project Write-Up
+# Consumer Technology Support Assistant: Project Write-Up
 
 A case study, for anyone evaluating this as a portfolio project rather
 than reading the code directly. For setup/usage, see `README.md`.
@@ -7,8 +7,8 @@ than reading the code directly. For setup/usage, see `README.md`.
 
 Support documentation for consumer electronics is scattered across long
 manuals and support pages. I wanted hands-on practice with the technique
-most production AI support tools actually use to solve this — retrieval-
-augmented generation (RAG) — and to build every stage of it myself,
+most production AI support tools actually use to solve this, retrieval-
+augmented generation (RAG), and to build every stage of it myself,
 end to end, rather than calling one API and stopping there.
 
 ## What I built
@@ -16,13 +16,13 @@ end to end, rather than calling one API and stopping there.
 An assistant that answers setup, troubleshooting, and spec questions
 about two real products (Sony WH-1000XM5, AirPods Pro 2 USB-C), grounded
 only in their official documentation, with inline citations back to the
-exact source. If a question falls outside what the sources cover — a
-warranty question, or a different brand entirely — it says so instead of
+exact source. If a question falls outside what the sources cover (a
+warranty question or a different brand entirely), it says so instead of
 guessing.
 
 Under the hood: documents are split into overlapping chunks, turned into
-vectors (embeddings), and searched two ways at once — by meaning
-(semantic search) and by exact keyword overlap (BM25) — then the top
+vectors (embeddings), and searched two ways at once, by meaning
+(semantic search) and by exact keyword overlap (BM25). Then the top
 candidates are re-ranked by a second, more precise model before being
 handed to Claude to write a cited answer. Every stage is independently
 tested, and retrieval quality is measured against a hand-labeled set of
@@ -31,7 +31,7 @@ real questions, not just eyeballed.
 ## Design Decisions and Tradeoffs
 
 **Why hybrid search instead of just embeddings.** Embeddings are great at
-matching meaning but can underweight short, literal terms — a user
+matching meaning but can underweight short, literal terms. A user
 reading exact on-screen text ("AirPlay button, Control Center") types
 something closer to a keyword search than a natural-language question.
 I found two real cases in my own small corpus where pure semantic search
@@ -40,22 +40,22 @@ reason. Adding BM25 keyword search alongside embeddings, blended by a
 tunable weight, fixed both.
 
 **Why I measure hit-rate *and* mean reciprocal rank, not just one.**
-Hit-rate answers "is the right document somewhere in the top 3?" — a
+Hit-rate answers "is the right document somewhere in the top 3?", a
 forgiving question. Mean reciprocal rank (MRR) answers "how close to #1
 is it?" On this project, two methods tied on hit-rate while one
-consistently ranked the right answer first and the other third — a real
+consistently ranked the right answer first and the other third, a real
 quality difference hit-rate alone would have hidden.
 
 **Why the eval set grew from 10 to 28 questions.** My first golden set
 scored a perfect 1.00 on every metric, which meant it had nothing left to
-show. I deliberately added harder, more ambiguous questions — and they
+show. I deliberately added harder, more ambiguous questions, and they
 surfaced a genuine weakness: two of my four source documents share
 overlapping language, which confused retrieval on a handful of
 questions. I diagnosed it, tested a fix (retuning a retrieval weight)
-against real data rather than guessing, and it worked — measurably.
+against real data rather than guessing, and it worked measurably.
 
 **Why I reported a finding I didn't like.** After that fix, my reranking
-step — a whole extra model, more latency, more complexity — stopped
+step (a whole extra model, more latency, more complexity) stopped
 adding any measurable benefit on this evaluation set. I could have left
 that quietly out of the write-up. Instead: the honest reason is that my
 corpus is small enough (9 chunks) that a well-tuned simpler method
@@ -69,13 +69,13 @@ real, defensible engineering judgment, not a failure to hide.
    which means it always looks "confident" even for a totally unrelated
    question. Reusing that score to decide whether a question was
    off-topic would have quietly broken my system's ability to correctly
-   refuse a warranty question or a competitor's product — a real safety
+   refuse a warranty question or a competitor's product, a real safety
    behavior I'd already built and tested in an earlier stage. I caught
    it while integrating a new feature, before it ever shipped.
 2. **A 9.82GB Docker image for a project with a 9-chunk corpus.** My
    embedding library defaulted to installing full GPU support even though
    the container never touches a GPU. Installing the CPU-only build
-   instead cut the image size by almost 80%, to 2.1GB — the kind of
+   instead cut the image size by almost 80%, to 2.1GB, the kind of
    easy-to-miss inefficiency that's genuinely worth knowing to check for.
 
 ## Results
@@ -96,17 +96,16 @@ source covers.
 Docker image size: 9.82GB → 2.1GB after fixing an unnecessary GPU
 dependency.
 
-Every question's full pipeline (retrieval, reranking, generation —
-latency, token usage, and cost per stage) is traced in
+Every question's full pipeline (retrieval, reranking, generation: latency, token usage, and cost per stage) is traced in
 [Langfuse](https://langfuse.com), a real observability platform, not a
 local log file. One thing worth naming honestly: tracing had to be
 explicitly disabled for unit tests, since mocked test calls were
-initially sending fake trace data into the real project dashboard — an
+initially sending fake trace data into the real project dashboard, an
 easy mistake in observability tooling that's worth knowing to check for.
 
 ## What I'd do next
 
-- Grow the source corpus meaningfully — the current 4-document corpus is
+- Grow the source corpus meaningfully. The current 4-document corpus is
   intentionally small for a portfolio project, but a bigger, more varied
   corpus would be a fairer test of hybrid search and reranking, and would
   very likely show reranking earning its cost back.

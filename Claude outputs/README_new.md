@@ -118,13 +118,13 @@ Ctrl+C to stop immediately.
 
 ## Testing vs. evaluation
 
-- `pytest tests/` — 12 unit tests, free, no real API calls (API-calling
+- `pytest tests/`: 12 unit tests, free, no real API calls (API-calling
   functions are tested with mocks). Checks the *code* behaves correctly:
   does WAV conversion produce valid audio, does latency tracking record
   correctly even when a stage fails, does the pipeline's fallback logic
   actually trigger when a stage errors out, does tool-argument
   validation correctly reject bad input (missing/empty/oversized).
-- `pytest evals/` — 9 real-API evals against meaningful scenarios. Checks
+- `pytest evals/`: 9 real-API evals against meaningful scenarios. Checks
   the *system* behaves well: does a weather question correctly trigger
   the tool, does a nonexistent location get handled gracefully instead of
   hallucinated, does a non-weather question correctly skip the tool, is a

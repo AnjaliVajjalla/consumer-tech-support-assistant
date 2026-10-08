@@ -57,7 +57,7 @@ def build_context(chunks: list[dict]) -> str:
     """Number each chunk as a labeled source block for the prompt."""
     blocks = []
     for i, chunk in enumerate(chunks, start=1):
-        blocks.append(f"[{i}] {chunk['product']} — {chunk['title']}\n{chunk['text']}")
+        blocks.append(f"[{i}] {chunk['product']}: {chunk['title']}\n{chunk['text']}")
     return "\n\n".join(blocks)
 
 
