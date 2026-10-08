@@ -13,6 +13,7 @@ import re
 import pytest
 
 from src.generate import answer
+from evals.eval_retrieval import REFUSAL_SET
 
 EVAL_CASES = [
     {
@@ -22,6 +23,14 @@ EVAL_CASES = [
     {
         "question": "What do I do if my AirPods won't connect?",
         "expected_product": "AirPods Pro 2 (USB-C)",
+    },
+    {
+        "question": "How do I reset Pixel Buds Pro 2?",
+        "expected_product": "Google Pixel Buds Pro 2",
+    },
+    {
+        "question": "Which listening modes are available on Bose QuietComfort Ultra?",
+        "expected_product": "Bose QuietComfort Ultra Headphones",
     },
 ]
 
@@ -41,8 +50,8 @@ def test_answer_cites_the_correct_product(case):
 
 
 def test_answer_cites_nothing_for_a_product_not_in_the_corpus():
-    """Bose isn't in the corpus, so the answer must not cite our real products as if they covered it."""
-    result = answer("What is the battery life on my Bose QuietComfort headphones?")
+    """Samsung isn't in the corpus, so the answer must not cite supported products for it."""
+    result = answer("How do I pair Samsung Galaxy Buds3 Pro?")
     assert result["sources"] == []
 
 
@@ -50,3 +59,17 @@ def test_answer_cites_nothing_for_a_warranty_question():
     """No source document covers warranty policy, so the answer must not fabricate a citation for it."""
     result = answer("My Sony headphones broke, can I get a free replacement under warranty?")
     assert result["sources"] == []
+
+
+@pytest.mark.parametrize("case", REFUSAL_SET)
+def test_expanded_refusal_cases(case):
+    result = answer(case["question"])
+    assert result["answer"].strip()
+    assert result["sources"] == [], case["expected"]
+
+
+def test_ambiguous_product_requests_clarification():
+    result = answer("How do I put my earbuds into pairing mode?")
+    assert result["sources"] == []
+    assert "?" in result["answer"]
+    assert any(word in result["answer"].lower() for word in ["which", "what", "model"])

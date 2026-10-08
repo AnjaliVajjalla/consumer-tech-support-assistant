@@ -1,0 +1,7 @@
+[
+  {"file":"pairing.txt","product":"Bose QuietComfort Ultra Headphones","title":"Connecting a Bluetooth device","url":"https://support.bose.com/article/quietcomfort-ultra-headphones-connecting-a-bluetooth-device","category":"setup"},
+  {"file":"charging.txt","product":"Bose QuietComfort Ultra Headphones","title":"Charging your headphones","url":"https://support.bose.com/article/quietcomfort-ultra-headphones-charging-your-headphones?language=en_US","category":"charging"},
+  {"file":"modes.txt","product":"Bose QuietComfort Ultra Headphones","title":"Using Modes","url":"https://support.bose.com/article/quietcomfort-ultra-headphones-using-modes","category":"listening_modes"},
+  {"file":"connection_troubleshooting.txt","product":"Bose QuietComfort Ultra Headphones","title":"Dropped Bluetooth Connection","url":"https://support.bose.com/article/quietcomfort-ultra-headphones-bluetooth-disconnects-from-paired-device","category":"troubleshooting"},
+  {"file":"no_audio.txt","product":"Bose QuietComfort Ultra Headphones","title":"No audio from product","url":"https://support.bose.com/article/quietcomfort-ultra-headphones-no-audio-from-product?language=en_US","category":"troubleshooting"}
+]

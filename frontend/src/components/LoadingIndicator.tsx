@@ -1,0 +1,1 @@
+export function LoadingIndicator() { return <div className="card status" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /><div><strong>Searching official documentation...</strong><p>Retrieving, reranking, and preparing a cited answer.</p></div></div> }

@@ -12,5 +12,11 @@
     "title": "Pairing cannot be done",
     "url": "https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000534625.html",
     "category": "troubleshooting"
-  }
+  },
+  {"file":"charging.txt","product":"Sony WH-1000XM5","title":"Charging the headset","url":"https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000534502.html","category":"charging"},
+  {"file":"battery_status.txt","product":"Sony WH-1000XM5","title":"Checking the remaining battery charge","url":"https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000534506.html","category":"battery"},
+  {"file":"reset.txt","product":"Sony WH-1000XM5","title":"Resetting the headset","url":"https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000541012.html","category":"reset"},
+  {"file":"noise_canceling.txt","product":"Sony WH-1000XM5","title":"Using the noise canceling function","url":"https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000534715.html","category":"listening_modes"},
+  {"file":"controls.txt","product":"Sony WH-1000XM5","title":"Location and function of parts","url":"https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000534513.html","category":"controls"},
+  {"file":"specifications.txt","product":"Sony WH-1000XM5","title":"Specifications","url":"https://helpguide.sony.net/mdr/wh1000xm5/v1/en/contents/TP1000541014.html","category":"specs"}
 ]

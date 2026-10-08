@@ -13,7 +13,7 @@ from generate import answer, langfuse  # noqa: E402
 
 
 def main() -> None:
-    print("Consumer Technology Support Assistant (Sony WH-1000XM5 / AirPods Pro 2)")
+    print("Consumer Technology Support Assistant (Sony WH-1000XM5 / AirPods Pro 2 / Pixel Buds Pro 2 / Bose QuietComfort Ultra)")
     print("Type a question, or 'quit' to exit.\n")
 
     while True:

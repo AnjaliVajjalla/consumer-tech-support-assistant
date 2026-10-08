@@ -1,0 +1,16 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import App from './App'
+import * as api from './api/supportApi'
+import type { AskResponse } from './types/support'
+
+const success: AskResponse = { answer: 'Hold the power button for five seconds [1].', sources: [{ number: 1, product: 'Sony WH-1000XM5', title: 'Pairing', url: 'https://example.com/sony' }], latency: { retrieve_ms: 10, rerank_ms: 20, generate_ms: 30, total_ms: 60 }, usage: { input_tokens: 100, output_tokens: 25 } }
+afterEach(() => vi.restoreAllMocks())
+describe('support assistant', () => {
+  it('prevents empty submission', async () => { render(<App />); await userEvent.click(screen.getByRole('button', { name: 'Search documentation' })); expect(screen.getByText('Enter a question before searching.')).toBeInTheDocument() })
+  it('shows loading and disables repeated submission', async () => { vi.spyOn(api, 'askQuestion').mockReturnValue(new Promise(() => {})); render(<App />); await userEvent.type(screen.getByLabelText('Question'), 'How do I pair them?'); await userEvent.click(screen.getByRole('button', { name: 'Search documentation' })); expect(screen.getByText('Searching official documentation...')).toBeInTheDocument(); expect(screen.getByRole('button', { name: 'Searching...' })).toBeDisabled() })
+  it('renders answer, source, latency, and tokens', async () => { vi.spyOn(api, 'askQuestion').mockResolvedValue(success); render(<App />); await userEvent.type(screen.getByLabelText('Question'), 'How do I pair them?'); await userEvent.click(screen.getByRole('button', { name: 'Search documentation' })); expect(await screen.findByText('Hold the power button for five seconds [1].')).toBeInTheDocument(); expect(screen.getByRole('link', { name: 'Pairing' })).toHaveAttribute('href', 'https://example.com/sony'); expect(screen.getByText('60.0 ms')).toBeInTheDocument(); expect(screen.getByText('100 in / 25 out')).toBeInTheDocument() })
+  it('renders unsupported answers without invented sources', async () => { vi.spyOn(api, 'askQuestion').mockResolvedValue({ ...success, answer: 'I do not have that information.', sources: [] }); render(<App />); await userEvent.type(screen.getByLabelText('Question'), 'What about Bose?'); await userEvent.click(screen.getByRole('button', { name: 'Search documentation' })); expect(await screen.findByText('I do not have that information.')).toBeInTheDocument(); expect(screen.getByText(/No sources were cited/)).toBeInTheDocument() })
+  it('shows an error and retries the last question', async () => { const mocked = vi.spyOn(api, 'askQuestion').mockRejectedValueOnce(new Error('The request timed out. Please try again.')).mockResolvedValueOnce(success); render(<App />); await userEvent.type(screen.getByLabelText('Question'), 'How do I pair them?'); await userEvent.click(screen.getByRole('button', { name: 'Search documentation' })); expect(await screen.findByText('The request timed out. Please try again.')).toBeInTheDocument(); await userEvent.click(screen.getByRole('button', { name: 'Retry' })); await waitFor(() => expect(mocked).toHaveBeenCalledTimes(2)); expect(await screen.findByText('Hold the power button for five seconds [1].')).toBeInTheDocument() })
+})

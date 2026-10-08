@@ -12,5 +12,10 @@
     "title": "If your AirPods or AirPods Pro won't connect",
     "url": "https://support.apple.com/en-us/118576",
     "category": "troubleshooting"
-  }
+  },
+  {"file":"pairing.txt","product":"AirPods Pro 2 (USB-C)","title":"Pair AirPods with an Apple device","url":"https://support.apple.com/guide/airpods/dev7c85810f2/web","category":"setup"},
+  {"file":"charging.txt","product":"AirPods Pro 2 (USB-C)","title":"Charge AirPods or AirPods Pro","url":"https://support.apple.com/guide/airpods/devde25a4bbe/web","category":"charging"},
+  {"file":"find_my.txt","product":"AirPods Pro 2 (USB-C)","title":"Find your AirPods","url":"https://support.apple.com/guide/airpods/dev8e8b93d71/web","category":"find_my"},
+  {"file":"noise_control.txt","product":"AirPods Pro 2 (USB-C)","title":"Change noise control modes on AirPods Pro","url":"https://support.apple.com/guide/airpods/dev6cbd13615/web","category":"listening_modes"},
+  {"file":"controls.txt","product":"AirPods Pro 2 (USB-C)","title":"Use controls and gestures with your AirPods","url":"https://support.apple.com/guide/airpods/devb2c431317/web","category":"controls"}
 ]

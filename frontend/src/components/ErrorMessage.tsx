@@ -1,0 +1,1 @@
+export function ErrorMessage({ message, onRetry }: { message: string; onRetry: () => void }) { return <div className="card error" role="alert" aria-live="assertive"><div><strong>We could not complete that request.</strong><p>{message}</p></div><button type="button" onClick={onRetry}>Retry</button></div> }

@@ -6,3 +6,6 @@ anthropic
 python-dotenv
 rank-bm25
 langfuse
+fastapi
+uvicorn
+httpx
